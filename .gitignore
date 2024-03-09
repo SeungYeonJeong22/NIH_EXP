@@ -164,3 +164,5 @@ data/
 *.jpg
 *.png
 *.csv
+*.json
+*.npy
