@@ -12,14 +12,14 @@ class FPN(nn.Module):
         # l1~l4는 p2~p5를 만들기 위한 lateral layer에 쓰이는 conv
         # lateral layer 밑에서부터 l1,l2,l3,l4임
         # l4: p5를 만들어주는 2x2 conv (top down layer에서 쓰이는 layer)
-        self.lateral_layer_l4 = nn.Conv2d(1024, 1024, kernel_size=2, padding=1)
+        self.lateral_layer_l4 = nn.Conv2d(1024, 1024, kernel_size=2, padding=1, dilation=1)
         
         # 순차적으로 denseblock3->옆으로 가는 conv
         # 순차적으로 denseblock2->옆으로 가는 conv
         # 순차적으로 denseblock1->옆으로 가는 conv
-        lateral_layer_l3 = nn.Conv2d(1024, 1024, kernel_size=2, padding=1)
-        lateral_layer_l2 = nn.Conv2d(512, 512, kernel_size=2, padding=1)
-        lateral_layer_l1 = nn.Conv2d(256, 256, kernel_size=2, padding=1)
+        lateral_layer_l3 = nn.Conv2d(1024, 1024, kernel_size=2, padding=1, dilation=1)
+        lateral_layer_l2 = nn.Conv2d(512, 512, kernel_size=2, padding=1, dilation=1)
+        lateral_layer_l1 = nn.Conv2d(256, 256, kernel_size=2, padding=1, dilation=1)
         
         self.lateral_layers = nn.ModuleList([
             lateral_layer_l3,
@@ -114,8 +114,9 @@ class FPN(nn.Module):
 
 
 class MLPBolck(nn.Module):
-    def __init__(self):
+    def __init__(self, in_features):
         super(MLPBolck, self).__init__()
+        # BatchNorm2d에 상수가 아니라 in_features로 받아야 할 듯함
         self.network = nn.Sequential(nn.BatchNorm2d(1024),
                                     nn.MaxPool2d(),
                                     nn.Dropout(0.5),
