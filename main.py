@@ -17,6 +17,10 @@ filterwarnings("ignore")
 
 
 data = pd.read_csv("Unique_Label_ver2.csv")
+finding_labels = sorted(data['Finding Labels'].unique())
+label_map = {label: idx for idx, label in enumerate(finding_labels)}
+data['Finding Labels'] = data['Finding Labels'].map(label_map)
+
 train_X, test_X, train_y, test_y = train_test_split(data["Image Index"].values, data["Finding Labels"].values, 
                                                     test_size=0.3, random_state=0, stratify=list(data["Finding Labels"].values))
 
