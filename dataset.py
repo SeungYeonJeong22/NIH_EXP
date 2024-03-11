@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
+import torch
 import os
 import pandas as pd
 import numpy as np
@@ -11,7 +12,7 @@ class CustomDataset(Dataset):
     def __init__(self, data_list, transform=None):
         self.data_list = data_list
         self.transform = transform
-    
+        
     def __len__(self):
         return len(self.data_list)
     
@@ -22,4 +23,7 @@ class CustomDataset(Dataset):
         image = Image.open(image_path).convert('RGB')
         if self.transform:
             image = self.transform(image)
+            
+        label = torch.tensor(label, dtype=torch.long)
+        
         return image, label
