@@ -1,5 +1,5 @@
 '''
-CheXNet 훈련시켜서 모델 저장하기 위함
+나중에 CheXNet 훈련시켜서 모델 저장하기 위함
 '''
 import torch
 import torchvision
@@ -31,12 +31,10 @@ finding_labels = sorted(data['Finding Labels'].unique())
 label_map = {label: idx for idx, label in enumerate(finding_labels)}
 data['Finding Labels'] = data['Finding Labels'].map(label_map)
 
-train_X, test_X, train_y, test_y = train_test_split(data["Image Index"].values, data["Finding Labels"].values, 
-                                                    test_size=0.3, random_state=0, stratify=list(data["Finding Labels"].values))
+train_X, train_y = data["Image Index"].values, data["Finding Labels"].values
 
-data_list = {"Train":[], "Test":[]}
+data_list = {"Train":[]}
 data_list['Train'].extend([[i,l] for i,l in zip(train_X, train_y)])
-data_list['Test'].extend([[i,l] for i,l in zip(train_X, train_y)])
 
 classes = sorted(data['Finding Labels'].unique())
 
