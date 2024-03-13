@@ -55,7 +55,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = FPN()
+model = FPN(device=device)
 
 # backbone의 kernel size 변경
 # for name, module in model.backbone.named_modules():
@@ -73,11 +73,9 @@ for key, value in state_dict.items():
     new_state_dict[new_key] = value
 
 model = model.to(device=device)
-model = nn.DataParallel(model).cuda()
+# model = nn.DataParallel(model).cuda()
 
 model.load_state_dict(new_state_dict, strict=False)
-
-
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
