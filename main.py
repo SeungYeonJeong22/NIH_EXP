@@ -11,8 +11,9 @@ import torch.nn as nn
 from torch import optim
 
 from dataset import CustomDataset
-# from model import CheXNet
 from model2 import FPN
+from metric import compute_metrics
+# from metric import calculate_metrics, compute_metrics
 
 from warnings import filterwarnings
 filterwarnings("ignore")
@@ -57,11 +58,6 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = FPN(device=device)
 
-# backbone의 kernel size 변경
-# for name, module in model.backbone.named_modules():
-#     if 'transition' in name and name.endswith("conv"):
-#         module.kernel_size = (2, 2)
-
 backbone = torch.load('model.pth.tar', map_location='cpu')
 state_dict = backbone['state_dict']
 
@@ -83,7 +79,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # Training loop
 best_test_loss = float('inf')
 best_epoch = 0
-num_epochs = 10
+num_epochs = 30
 
 save_model_path = "save_model"
 
@@ -93,7 +89,7 @@ if not os.path.exists(save_model_path):
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
-    for batch_idx, (inputs, labels) in tqdm(enumerate(train_loader), desc="Train"):
+    for batch_idx, (inputs, labels) in tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epoch}: Train"):
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -108,12 +104,19 @@ for epoch in range(num_epochs):
     # Test loop
     model.eval()
     test_loss = 0.0
+    all_outputs = []
+    all_labels = []
+    
     with torch.no_grad():
-        for inputs, labels in tqdm(test_loader, desc=f"Epoch {epoch}: Test"):
+        for inputs, labels in tqdm(test_loader, total=len(test_loader), desc=f"Epoch {epoch}: Test"):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             test_loss += loss.item() * inputs.size(0)
+            
+            # Save outputs and labels for calculating metrics later
+            all_outputs.append(outputs)
+            all_labels.append(labels)            
 
     test_loss = test_loss / len(test_loader.dataset)
     print(f"Epoch [{epoch+1}/{num_epochs}], Test Loss: {test_loss:.4f}")
@@ -124,3 +127,26 @@ for epoch in range(num_epochs):
         best_epoch = epoch
         torch.save(model.state_dict(), f'{save_model_path}/FPN_based_ChexNet_model.pth')
         print("Saved model at epoch", best_epoch+1)
+        
+    # Concatenate all outputs and labels from all batches
+    all_outputs = torch.cat(all_outputs, dim=0)
+    all_labels = torch.cat(all_labels, dim=0)
+
+    # # Calculate metrics using sklearn's classification report
+    # report = calculate_metrics(all_outputs, all_labels)
+    # accuracy = report['accuracy']
+    # precision = np.mean([report[str(i)]['precision'] for i in range(len(label_map))])
+    # recall = np.mean([report[str(i)]['recall'] for i in range(len(label_map))])
+    # f1_score = np.mean([report[str(i)]['f1-score'] for i in range(len(label_map))])
+
+    # print(f"Accuracy: {accuracy:.4f}")
+    # print(f"Precision: {precision:.4f}")
+    # print(f"Recall: {recall:.4f}")
+    # print(f"F1 Score: {f1_score:.4f}")
+    
+    accuracy, precision, recall, f1 = compute_metrics(all_outputs.detach().cpu().numpy(), all_labels.detach().cpu().numpy())
+    
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")

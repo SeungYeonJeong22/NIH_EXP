@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
 import torch.nn.functional as F
-
+import gc
 
 class FPN(nn.Module):
     def __init__(self, device='cpu', num_classes=14):
@@ -37,8 +37,6 @@ class FPN(nn.Module):
         )
         
         self.upsampling = nn.Upsample(scale_factor=2, mode='nearest')
-        
-        
         
         self.batch_layer = nn.BatchNorm2d(512)
         self.last_fc_layer = nn.Linear(1024, 1024)
@@ -88,6 +86,10 @@ class FPN(nn.Module):
             
         mlp_block = MLPBlock(bottom_up_features[-1].shape[1], device=self.device)
         mlp_block.to(device=self.device)
+        
+        torch.cuda.empty_cache()
+        gc.collect()
+        
         mlp_output.append(mlp_block(bottom_up_features[-1]))
         
         concatenated_features = torch.cat(mlp_output, dim=1)
@@ -95,7 +97,7 @@ class FPN(nn.Module):
         fc_network = FCNetwork(concatenated_features.size(1), device=self.device)
         fc_network.to(device=self.device)
         
-        outputs = fc_network(concatenated_features.to(self.device))
+        outputs = fc_network(concatenated_features)
         
         return outputs
     
@@ -139,24 +141,6 @@ class FPN(nn.Module):
         return top_down_features, p5_features
 
 
-# class MLPBlock(nn.Module):
-#     def __init__(self, in_features):
-#         super(MLPBlock, self).__init__()
-#         self.in_features = 0
-        
-#         # BatchNorm2d에 상수가 아니라 in_features로 받아야 할 듯함
-#         self.network = nn.Sequential(nn.BatchNorm2d(in_features),
-#                                     nn.AdaptiveMaxPool2d(1),
-#                                     nn.Dropout(0.5),
-#                                     nn.Linear(1024, 2048))
-#     def forward(self, x):
-#         return self.network(x)
-    
-#     def __len__(self, x):
-#         return len(x)
-
-
-
 class MLPBlock(nn.Module):
     def __init__(self, in_features, out_features=2048, device='cpu'):
         super(MLPBlock, self).__init__()
@@ -180,11 +164,11 @@ class FCNetwork(nn.Module):
         self.fc1 = nn.Linear(concatenated_feature_size, 2048)
         self.fc2 = nn.Linear(2048, 1024)
         self.final_bn = nn.BatchNorm1d(1024)
-        self.output = nn.Linear(1024, 15)
+        self.output = nn.Linear(1024, 14)
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.final_bn(x)
-        x = torch.sigmoid(self.output(x))  # Assuming multilabel classification
+        x = torch.softmax(self.output(x), dim=1)
         return x
