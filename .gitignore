@@ -166,3 +166,6 @@ data/
 *.csv
 *.json
 *.npy
+
+*pth
+*.pickle
