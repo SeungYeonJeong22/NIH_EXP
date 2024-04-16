@@ -1,4 +1,4 @@
-# Causal Medical Image Classification
+# Causal Medical Image Classification 
 
 In this project, I propose a new way to explore the integration of two investigations that yielded promising results: (i) my previous **Causality-Driven CNNs** (e.g. _Mulcat_, see below), and (ii) causal intervention/**backdoor adjustment** by [this](https://github.com/zc2024/Causal_CXR)).
 
