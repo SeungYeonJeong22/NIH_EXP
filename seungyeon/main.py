@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch import optim
 
 from dataset import CustomDataset
-from model2 import FPN
+from model import FPN
 from metric import compute_metrics
 # from metric import calculate_metrics, compute_metrics
 
@@ -19,17 +19,31 @@ from warnings import filterwarnings
 filterwarnings("ignore")
 
 
-data = pd.read_csv("Unique_Label_ver2.csv")
-finding_labels = sorted(data['Finding Labels'].unique())
-label_map = {label: idx for idx, label in enumerate(finding_labels)}
-data['Finding Labels'] = data['Finding Labels'].map(label_map)
+# data = pd.read_csv("../../data/Data_Entry_2017.csv")
+# finding_labels = sorted(data['Finding Labels'].unique())
+# label_map = {label: idx for idx, label in enumerate(finding_labels)}
+# data['Finding Labels'] = data['Finding Labels'].map(label_map)
 
-train_X, test_X, train_y, test_y = train_test_split(data["Image Index"].values, data["Finding Labels"].values, 
-                                                    test_size=0.3, random_state=0, stratify=list(data["Finding Labels"].values))
+# train_X, test_X, train_y, test_y = train_test_split(data["Image Index"].values, data["Finding Labels"].values, 
+#                                                     test_size=0.3, random_state=0, stratify=list(data["Finding Labels"].values))
 
-data_list = {"Train":[], "Test":[]}
-data_list['Train'].extend([[i,l] for i,l in zip(train_X, train_y)])
-data_list['Test'].extend([[i,l] for i,l in zip(test_X, test_y)])
+data_list = {'Train':[], 'Test':[]}
+# data_list['Train'].extend([[i,l] for i,l in zip(train_X, train_y)])
+# data_list['Test'].extend([[i,l] for i,l in zip(test_X, test_y)])
+
+import pickle
+
+train_path = "../../data/traindata.pickle"
+test_path = "../../data/testdata.pickle"
+
+train = pickle.load(open(train_path, 'rb'))
+test = pickle.load(open(test_path, 'rb'))
+
+for i in range(len(train)):
+    data_list['Train'].extend([[train[i][0], train[i][-1]]])
+    
+for i in range(len(test)):
+    data_list['Test'].extend([[test[i][0], test[i][-1]]])
 
 train_transform = transforms.Compose([
     transforms.Resize((224, 224)),                   # 이미지 크기 조정
@@ -69,11 +83,11 @@ for key, value in state_dict.items():
     new_state_dict[new_key] = value
 
 model = model.to(device=device)
-# model = nn.DataParallel(model).cuda()
 
 model.load_state_dict(new_state_dict, strict=False)
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCELoss()
+
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training loop
@@ -111,6 +125,7 @@ for epoch in range(num_epochs):
         for inputs, labels in tqdm(test_loader, total=len(test_loader), desc=f"Epoch {epoch}: Test"):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
+            
             loss = criterion(outputs, labels)
             test_loss += loss.item() * inputs.size(0)
             
@@ -131,18 +146,6 @@ for epoch in range(num_epochs):
     # Concatenate all outputs and labels from all batches
     all_outputs = torch.cat(all_outputs, dim=0)
     all_labels = torch.cat(all_labels, dim=0)
-
-    # # Calculate metrics using sklearn's classification report
-    # report = calculate_metrics(all_outputs, all_labels)
-    # accuracy = report['accuracy']
-    # precision = np.mean([report[str(i)]['precision'] for i in range(len(label_map))])
-    # recall = np.mean([report[str(i)]['recall'] for i in range(len(label_map))])
-    # f1_score = np.mean([report[str(i)]['f1-score'] for i in range(len(label_map))])
-
-    # print(f"Accuracy: {accuracy:.4f}")
-    # print(f"Precision: {precision:.4f}")
-    # print(f"Recall: {recall:.4f}")
-    # print(f"F1 Score: {f1_score:.4f}")
     
     accuracy, precision, recall, f1 = compute_metrics(all_outputs.detach().cpu().numpy(), all_labels.detach().cpu().numpy())
     
