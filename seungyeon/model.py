@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import gc
 
 class FPN(nn.Module):
-    def __init__(self, device='cpu', num_classes=14):
+    def __init__(self, device='cpu', num_classes=15):
         super(FPN, self).__init__()
         self.device = device
         self.backbone = models.densenet121(pretrained=True)
@@ -165,7 +165,7 @@ class FCNetwork(nn.Module):
         self.fc1 = nn.Linear(concatenated_feature_size, 2048)
         self.fc2 = nn.Linear(2048, 1024)
         self.final_bn = nn.BatchNorm1d(1024)
-        self.output = nn.Linear(1024, 14)
+        self.output = nn.Linear(1024, 15)
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
