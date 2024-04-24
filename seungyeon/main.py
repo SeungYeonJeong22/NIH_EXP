@@ -13,25 +13,14 @@ from torch import optim
 from dataset import CustomDataset
 from model import FPN
 from metric import compute_metrics
+import pickle
+
 # from metric import calculate_metrics, compute_metrics
 
 from warnings import filterwarnings
 filterwarnings("ignore")
 
-
-# data = pd.read_csv("../../data/Data_Entry_2017.csv")
-# finding_labels = sorted(data['Finding Labels'].unique())
-# label_map = {label: idx for idx, label in enumerate(finding_labels)}
-# data['Finding Labels'] = data['Finding Labels'].map(label_map)
-
-# train_X, test_X, train_y, test_y = train_test_split(data["Image Index"].values, data["Finding Labels"].values, 
-#                                                     test_size=0.3, random_state=0, stratify=list(data["Finding Labels"].values))
-
 data_list = {'Train':[], 'Test':[]}
-# data_list['Train'].extend([[i,l] for i,l in zip(train_X, train_y)])
-# data_list['Test'].extend([[i,l] for i,l in zip(test_X, test_y)])
-
-import pickle
 
 train_path = "../../data/traindata.pickle"
 test_path = "../../data/testdata.pickle"
@@ -68,7 +57,10 @@ batch_size = 32
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "mps" if torch.backends.mps.is_available() else "cpu" # MacBook-air-m2 사용
+
+print("device : ", device)
 
 model = FPN(device=device)
 
@@ -83,11 +75,9 @@ for key, value in state_dict.items():
     new_state_dict[new_key] = value
 
 model = model.to(device=device)
-
 model.load_state_dict(new_state_dict, strict=False)
 
 criterion = nn.BCELoss()
-
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training loop
@@ -99,6 +89,46 @@ save_model_path = "save_model"
 
 if not os.path.exists(save_model_path):
     os.makedirs(save_model_path)
+    
+    
+learning_curve_file = "learning_curve.txt"
+train_outputs_file = "train_outputs.txt"
+test_outputs_file = "test_outputs.txt"
+
+if os.path.exists(learning_curve_file):
+    os.remove(learning_curve_file)
+if os.path.exists(train_outputs_file):
+    os.remove(train_outputs_file)
+if os.path.exists(test_outputs_file):
+    os.remove(test_outputs_file)    
+
+
+with open(learning_curve_file, 'a') as f:
+    f.write("\t\ttrain_loss\ttest_loss\n")
+f.close()
+
+with open(train_outputs_file, 'a') as f:
+    f.write("\t\tTrain outputs\t\t\n")
+f.close()
+
+with open(test_outputs_file, 'a') as f:
+    f.write("\t\tTest outputs\t\t\n")
+f.close()
+
+def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None):
+    #learning curve
+    if outputs == None:
+        with open(file_name, 'a') as f:
+            f.write(f"Epoch:{epoch}\t{train_loss}\t{test_loss}\n")
+        f.close()
+    else:
+        # output file
+        with open(file_name, 'a') as f:
+            f.write(f"outputs: {outputs}\n")
+            f.write("----"*20)
+            f.write("\n")
+        f.close()
+    
 
 for epoch in range(num_epochs):
     model.train()
@@ -107,13 +137,14 @@ for epoch in range(num_epochs):
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
+        make_txt_file(train_outputs_file, outputs=outputs)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
         running_loss += loss.item() * inputs.size(0)
     
-    epoch_loss = running_loss / len(train_loader.dataset)
-    print(f"Epoch [{epoch+1}/{num_epochs}], Training Loss: {epoch_loss:.4f}")
+    train_loss = running_loss / len(train_loader.dataset)
+    print(f"Epoch [{epoch+1}/{num_epochs}], Training Loss: {train_loss:.4f}")
     
     # Test loop
     model.eval()
@@ -125,6 +156,7 @@ for epoch in range(num_epochs):
         for inputs, labels in tqdm(test_loader, total=len(test_loader), desc=f"Epoch {epoch}: Test"):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
+            make_txt_file(test_outputs_file, outputs=outputs)
             
             loss = criterion(outputs, labels)
             test_loss += loss.item() * inputs.size(0)
@@ -153,3 +185,5 @@ for epoch in range(num_epochs):
     print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
     print(f"F1 Score: {f1:.4f}")
+    
+    make_txt_file(learning_curve_file, epoch=epoch, train_loss=train_loss, test_loss=test_loss)
