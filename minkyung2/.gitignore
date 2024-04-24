@@ -1,0 +1,16 @@
+__pycache__/
+torch/
+config.json
+configs/
+*.txt
+*.gz
+*.tar
+test_list*
+train_val_list*
+Data_Entry_2017_v2020*
+*.pickle
+events.*
+/images
+out/
+pretrained_models/
+*interactive*
