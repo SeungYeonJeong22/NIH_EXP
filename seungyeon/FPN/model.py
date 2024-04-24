@@ -11,19 +11,20 @@ class FPN(nn.Module):
         self.device = device
         self.backbone = models.densenet121(pretrained=True)
         
+        kernel_size = 1
+        stride = 1
+        
         # l1~l4는 p2~p5를 만들기 위한 lateral layer에 쓰이는 conv
         # lateral layer 밑에서부터 l1,l2,l3,l4임
         # l4: p5를 만들어주는 2x2 conv (top down layer에서 쓰이는 layer)
-        # kernel_size가 원래 2x2여야 하지만, 계산이 안돼서 임시로 1로 맞춰놓음
-        self.lateral_layer_l4 = nn.Conv2d(1024, 1024, kernel_size=1)
+        self.lateral_layer_l4 = nn.Conv2d(1024, 1024, kernel_size=kernel_size)
         
         # 순차적으로 denseblock3->옆으로 가는 conv
         # 순차적으로 denseblock2->옆으로 가는 conv
         # 순차적으로 denseblock1->옆으로 가는 conv
-        # kernel_size가 원래 2x2여야 하지만, 계산이 안돼서 임시로 1로 맞춰놓음
-        self.lateral_layer_l3 = nn.Conv2d(512, 512, kernel_size=1)
-        self.lateral_layer_l2 = nn.Conv2d(256, 256, kernel_size=1)
-        self.lateral_layer_l1 = nn.Conv2d(128, 128, kernel_size=1)
+        self.lateral_layer_l3 = nn.Conv2d(512, 512, kernel_size=kernel_size)
+        self.lateral_layer_l2 = nn.Conv2d(256, 256, kernel_size=kernel_size)
+        self.lateral_layer_l1 = nn.Conv2d(128, 128, kernel_size=kernel_size)
         
         self.lateral_layers = nn.ModuleList([
             self.lateral_layer_l3,
@@ -31,9 +32,9 @@ class FPN(nn.Module):
             self.lateral_layer_l1
         ])
         
-        self.conv2dlayer_l6 = nn.Conv2d(1024, 512, kernel_size=2, stride=2)
+        self.conv2dlayer_l6 = nn.Conv2d(1024, 512, kernel_size=kernel_size, stride=stride)
         self.conv2dlayer_l7 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=2, stride=2),
+            nn.Conv2d(512, 512, kernel_size=kernel_size, stride=stride),
             nn.ReLU()
         )
         
@@ -42,18 +43,18 @@ class FPN(nn.Module):
         self.batch_layer = nn.BatchNorm2d(512)
         self.last_fc_layer = nn.Linear(1024, 1024)
         
-        # Replace final fully connected layer
-        self.backbone.classifier = nn.Sequential(
-            nn.Linear(1024, num_classes),
-            nn.Sigmoid()
-        )
+        # # Replace final fully connected layer
+        # self.backbone.classifier = nn.Sequential(
+        #     nn.Linear(1024, num_classes),
+        #     nn.Sigmoid()
+        # )
         
         # Define FPN layers
         self.bottom_up_layers = list(self.backbone.features)
         self.top_down_layers = nn.ModuleList([
-            nn.Conv2d(1024, 512, kernel_size=1),
-            nn.Conv2d(512, 256, kernel_size=1),
-            nn.Conv2d(256, 128, kernel_size=1),
+            nn.Conv2d(1024, 512, kernel_size=kernel_size),
+            nn.Conv2d(512, 256, kernel_size=kernel_size),
+            nn.Conv2d(256, 128, kernel_size=kernel_size),
         ])
         
         
@@ -88,8 +89,8 @@ class FPN(nn.Module):
         mlp_block = MLPBlock(bottom_up_features[-1].shape[1], device=self.device)
         mlp_block.to(device=self.device)
         
-        torch.cuda.empty_cache()
-        gc.collect()
+        # torch.cuda.empty_cache()
+        # gc.collect()
         
         mlp_output.append(mlp_block(bottom_up_features[-1]))
         
@@ -171,5 +172,5 @@ class FCNetwork(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.final_bn(x)
-        x = torch.softmax(self.output(x), dim=1)
+        x = torch.sigmoid(self.output(x))
         return x
