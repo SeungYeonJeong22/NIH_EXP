@@ -18,7 +18,7 @@ class CustomDataset(Dataset):
     
     def __getitem__(self, idx):
         image_name, label = self.data_list[idx]
-        image_path = os.path.join(f"../../data/images_all/{image_name}")
+        image_path = os.path.join(f"../../data/nih_resize_all/{image_name}")
         
         image = Image.open(image_path).convert('RGB')
         if self.transform:
