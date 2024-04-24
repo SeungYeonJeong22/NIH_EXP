@@ -18,12 +18,12 @@ class CustomDataset(Dataset):
     
     def __getitem__(self, idx):
         image_name, label = self.data_list[idx]
-        image_path = os.path.join(f"data/{image_name}")
+        image_path = os.path.join(f"../../data/images_all/{image_name}")
         
         image = Image.open(image_path).convert('RGB')
         if self.transform:
             image = self.transform(image)
             
-        label = torch.tensor(label, dtype=torch.long)
+        label = torch.tensor(label, dtype=torch.float32)
         
         return image, label
