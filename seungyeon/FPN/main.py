@@ -11,11 +11,13 @@ import torch.nn as nn
 from torch import optim
 
 from dataset import CustomDataset
-from model import FPN
 from metric import compute_metrics
 import pickle
+from datetime import datetime
 
-# from metric import calculate_metrics, compute_metrics
+from model import FPN
+from model2 import FPN101
+
 
 from warnings import filterwarnings
 filterwarnings("ignore")
@@ -58,10 +60,14 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 # device = "cuda" if torch.cuda.is_available() else "cpu"
-device = "mps" if torch.backends.mps.is_available() else "cpu" # MacBook-air-m2 사용
+if torch.cuda.is_available(): 
+    device = 'cuda'
+elif torch.backends.mps.is_available(): 
+    device = "mps"
+else: 
+    device = "cpu"
 
 print("device : ", device)
-
 model = FPN(device=device)
 
 backbone = torch.load('model.pth.tar', map_location='cpu')
@@ -85,35 +91,28 @@ best_test_loss = float('inf')
 best_epoch = 0
 num_epochs = 30
 
-save_model_path = "save_model"
+# result_csv 파일
+init_time = datetime.now()
+init_time = init_time.strftime('%m%d_%H%M')
+columns = [	"time",
+			"epoch",
+			"best_epoch",
+			"Training_loss",
+			"Test_loss",
+			"Accyracy",
+			"Precision",
+			"Recall",
+			"F1_score"]
 
+save_model_path = "save_model"
 if not os.path.exists(save_model_path):
     os.makedirs(save_model_path)
+
+# save_error_root_path = "save_error"
     
-    
-learning_curve_file = "learning_curve.txt"
-train_outputs_file = "train_outputs.txt"
-test_outputs_file = "test_outputs.txt"
-
-if os.path.exists(learning_curve_file):
-    os.remove(learning_curve_file)
-if os.path.exists(train_outputs_file):
-    os.remove(train_outputs_file)
-if os.path.exists(test_outputs_file):
-    os.remove(test_outputs_file)    
-
-
-with open(learning_curve_file, 'a') as f:
-    f.write("\t\ttrain_loss\ttest_loss\n")
-f.close()
-
-with open(train_outputs_file, 'a') as f:
-    f.write("\t\tTrain outputs\t\t\n")
-f.close()
-
-with open(test_outputs_file, 'a') as f:
-    f.write("\t\tTest outputs\t\t\n")
-f.close()
+save_result_path = "save_result"
+if not os.path.exists(save_result_path):
+    os.makedirs(save_result_path)
 
 def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None):
     #learning curve
@@ -128,8 +127,39 @@ def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None):
             f.write("----"*20)
             f.write("\n")
         f.close()
-    
 
+if not os.path.exists(os.path.join(save_result_path, init_time)):
+    os.makedirs(os.path.join(save_result_path, init_time))
+
+learning_curve_file = os.path.join(save_result_path, init_time, "learning_curve.txt")
+train_outputs_file  = os.path.join(save_result_path, init_time, "train_outputs.txt")
+test_outputs_file   = os.path.join(save_result_path, init_time, "test_outputs.txt")
+labels_file         = os.path.join(save_result_path, init_time, "labels.txt")
+csv_name            = os.path.join(save_result_path, init_time, "output.csv")
+
+init_df = pd.DataFrame(columns=columns)
+init_df.to_csv(csv_name, index=False)
+
+
+with open(learning_curve_file, 'a') as f:
+    f.write("\t\ttrain_loss\ttest_loss\n")
+f.close()
+
+with open(train_outputs_file, 'a') as f:
+    f.write("\t\tTrain outputs\t\t\n")
+f.close()
+
+with open(test_outputs_file, 'a') as f:
+    f.write("\t\tTest outputs\t\t\n")
+f.close()
+
+with open(labels_file, 'a') as f:
+    f.write("\t\lables\t\t\n")
+f.close()
+
+
+#####################################################################################################
+# Train & Test
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
@@ -138,6 +168,7 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         outputs = model(inputs)
         make_txt_file(train_outputs_file, outputs=outputs)
+        make_txt_file(labels_file, outputs=labels)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -172,7 +203,7 @@ for epoch in range(num_epochs):
     if test_loss < best_test_loss:
         best_test_loss = test_loss
         best_epoch = epoch
-        torch.save(model.state_dict(), f'{save_model_path}/FPN_based_ChexNet_model.pth')
+        torch.save(model.state_dict(), f'{save_model_path}/{init_time}_FPN_based_ChexNet_model.pth')
         print("Saved model at epoch", best_epoch+1)
         
     # Concatenate all outputs and labels from all batches
@@ -187,3 +218,29 @@ for epoch in range(num_epochs):
     print(f"F1 Score: {f1:.4f}")
     
     make_txt_file(learning_curve_file, epoch=epoch, train_loss=train_loss, test_loss=test_loss)
+    
+    # 결과 저장
+    now = datetime.now() 
+    csv_record_time = now.strftime('%Y%m%d_%H%M%S')
+    csv_epoch = epoch
+    csv_best_epoch = best_epoch
+    csv_Training_loss = f"{train_loss:.4f}"
+    csv_Valid_loss = f"{test_loss:.4f}"
+    csv_Accyracy = f"{accuracy:.4f}"
+    csv_Precision = f"{precision:.4f}"
+    csv_Recall = f"{recall:.4f}"
+    csv_F1_score = f"{f1:.4f}"
+    
+    
+    csv_data = [csv_record_time, 
+                csv_epoch,
+                csv_best_epoch,
+                csv_Training_loss,
+                csv_Valid_loss,
+                csv_Accyracy,
+                csv_Precision,
+                csv_Recall,
+                csv_F1_score]
+    
+    df = pd.DataFrame([csv_data], columns=columns)
+    df.to_csv(csv_name, mode='a', header=False, index=False)
