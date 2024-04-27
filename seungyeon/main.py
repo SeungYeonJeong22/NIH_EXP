@@ -1,7 +1,10 @@
+import argparse
 import pandas as pd
 import numpy as np
 import os
 from tqdm import tqdm
+import random
+from datetime import datetime
 
 import torch
 from sklearn.model_selection import train_test_split
@@ -9,18 +12,21 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import torch.nn as nn
 from torch import optim
+import pickle
 
 from dataset import CustomDataset
 from metric import compute_metrics
-import pickle
-from datetime import datetime
-
 from model import FPN
 from model2 import FPN101
 
-
 from warnings import filterwarnings
 filterwarnings("ignore")
+
+parser = argparse.ArgumentParser(description='Hello')
+
+# error, output 파일들 생성할지 말지 (0: 생성x, 1: 생성:o)
+parser.add_argument('--log_files', default=0, type=int, help='Record outputs')
+args = parser.parse_args()
 
 data_list = {'Train':[], 'Test':[]}
 
@@ -41,7 +47,7 @@ train_transform = transforms.Compose([
     transforms.RandomResizedCrop(224),               # 무작위 크롭 및 크기 조정
     transforms.RandomHorizontalFlip(),               # 무작위 수평 뒤집기
     transforms.RandomAffine(degrees=20, shear=0.1),  # 무작위 회전 및 기울이기
-    # transforms.v2.RandomZoomOut(0.1),                 # 랜덤 줌 아웃 (v2에만 있는 것 같음)
+    # transforms.v2.RandomZoomOut(0.1),              # 랜덤 줌 아웃 (v2에만 있는 것 같음)
     transforms.ToTensor(),                           # 이미지를 Tensor로 변환
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 정규화
 ])
@@ -68,7 +74,8 @@ else:
     device = "cpu"
 
 print("device : ", device)
-model = FPN(device=device)
+# model = FPN(device=device)
+model = FPN101(device=device)
 
 backbone = torch.load('model.pth.tar', map_location='cpu')
 state_dict = backbone['state_dict']
@@ -114,11 +121,13 @@ save_result_path = "save_result"
 if not os.path.exists(save_result_path):
     os.makedirs(save_result_path)
 
-def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None):
+def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None, log_files=0):
     #learning curve
+    if log_files==0:
+        return
     if outputs == None:
         with open(file_name, 'a') as f:
-            f.write(f"Epoch:{epoch}\t{train_loss}\t{test_loss}\n")
+            f.write(f"Epoch:{epoch}  \t{train_loss}\t{test_loss}\n")
         f.close()
     else:
         # output file
@@ -128,36 +137,55 @@ def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None):
             f.write("\n")
         f.close()
 
-if not os.path.exists(os.path.join(save_result_path, init_time)):
+if args.log_files and not os.path.exists(os.path.join(save_result_path, init_time)):
     os.makedirs(os.path.join(save_result_path, init_time))
 
-learning_curve_file = os.path.join(save_result_path, init_time, "learning_curve.txt")
-train_outputs_file  = os.path.join(save_result_path, init_time, "train_outputs.txt")
-test_outputs_file   = os.path.join(save_result_path, init_time, "test_outputs.txt")
-labels_file         = os.path.join(save_result_path, init_time, "labels.txt")
-csv_name            = os.path.join(save_result_path, init_time, "output.csv")
+    learning_curve_file = os.path.join(save_result_path, init_time, "learning_curve.txt")
+    train_outputs_file  = os.path.join(save_result_path, init_time, "train_outputs.txt")
+    test_outputs_file   = os.path.join(save_result_path, init_time, "test_outputs.txt")
+    train_labels_file   = os.path.join(save_result_path, init_time, "train_labels.txt")
+    test_labels_file    = os.path.join(save_result_path, init_time, "test_labels.txt")
+    csv_name            = os.path.join(save_result_path, init_time, "output.csv")
 
-init_df = pd.DataFrame(columns=columns)
-init_df.to_csv(csv_name, index=False)
+    init_df = pd.DataFrame(columns=columns)
+    init_df.to_csv(csv_name, index=False)
+
+    with open(learning_curve_file, 'a') as f:
+        f.write("\t\tTrain_loss\tTest_loss\n")
+    f.close()
+
+    with open(train_outputs_file, 'a') as f:
+        f.write("\t\tTrain outputs\t\t\n")
+    f.close()
+
+    with open(test_outputs_file, 'a') as f:
+        f.write("\t\tTest outputs\t\t\n")
+    f.close()
+
+    with open(train_labels_file, 'a') as f:
+        f.write("\t\tTrain_Lables\t\t\n")
+    f.close()
+    
+    with open(test_labels_file, 'a') as f:
+        f.write("\t\tTest_Lables\t\t\n")
+    f.close()    
+else:
+    learning_curve_file = None
+    train_outputs_file  = None
+    test_outputs_file   = None
+    labels_file         = None
+    csv_name            = None
 
 
-with open(learning_curve_file, 'a') as f:
-    f.write("\t\ttrain_loss\ttest_loss\n")
-f.close()
+def init_random_seed(seed=0):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-with open(train_outputs_file, 'a') as f:
-    f.write("\t\tTrain outputs\t\t\n")
-f.close()
-
-with open(test_outputs_file, 'a') as f:
-    f.write("\t\tTest outputs\t\t\n")
-f.close()
-
-with open(labels_file, 'a') as f:
-    f.write("\t\lables\t\t\n")
-f.close()
-
-
+init_random_seed()
 #####################################################################################################
 # Train & Test
 for epoch in range(num_epochs):
@@ -167,8 +195,8 @@ for epoch in range(num_epochs):
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
-        make_txt_file(train_outputs_file, outputs=outputs)
-        make_txt_file(labels_file, outputs=labels)
+        make_txt_file(train_outputs_file, outputs=outputs, log_files=args.log_files)
+        make_txt_file(train_labels_file, outputs=labels, log_files=args.log_files)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -187,7 +215,8 @@ for epoch in range(num_epochs):
         for inputs, labels in tqdm(test_loader, total=len(test_loader), desc=f"Epoch {epoch}: Test"):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
-            make_txt_file(test_outputs_file, outputs=outputs)
+            make_txt_file(test_outputs_file, outputs=outputs, log_files=args.log_files)
+            make_txt_file(test_labels_file, outputs=labels, log_files=args.log_files)
             
             loss = criterion(outputs, labels)
             test_loss += loss.item() * inputs.size(0)
@@ -217,7 +246,7 @@ for epoch in range(num_epochs):
     print(f"Recall: {recall:.4f}")
     print(f"F1 Score: {f1:.4f}")
     
-    make_txt_file(learning_curve_file, epoch=epoch, train_loss=train_loss, test_loss=test_loss)
+    make_txt_file(learning_curve_file, epoch=epoch, train_loss=train_loss, test_loss=test_loss, log_files=args.log_files)
     
     # 결과 저장
     now = datetime.now() 
