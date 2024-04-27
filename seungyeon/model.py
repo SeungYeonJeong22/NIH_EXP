@@ -43,11 +43,11 @@ class FPN(nn.Module):
         self.batch_layer = nn.BatchNorm2d(512)
         self.last_fc_layer = nn.Linear(1024, 1024)
         
-        # # Replace final fully connected layer
-        # self.backbone.classifier = nn.Sequential(
-        #     nn.Linear(1024, num_classes),
-        #     nn.Sigmoid()
-        # )
+        # Replace final fully connected layer
+        self.backbone.classifier = nn.Sequential(
+            nn.Linear(1024, num_classes),
+            nn.Sigmoid()
+        )
         
         # Define FPN layers
         self.bottom_up_layers = list(self.backbone.features)
@@ -57,6 +57,15 @@ class FPN(nn.Module):
             nn.Conv2d(256, 128, kernel_size=kernel_size),
         ])
         
+        self.apply(self.init_weights)
+
+
+    def init_weights(self, m):
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
         
     def forward(self, x):
         # Bottom-up pathway
@@ -151,6 +160,7 @@ class MLPBlock(nn.Module):
         self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(in_features, out_features)
         
+        
     def forward(self, x):
         x = self.batch_norm(x)
         x = self.gap(x)
@@ -167,6 +177,7 @@ class FCNetwork(nn.Module):
         self.fc2 = nn.Linear(2048, 1024)
         self.final_bn = nn.BatchNorm1d(1024)
         self.output = nn.Linear(1024, 15)
+        
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
