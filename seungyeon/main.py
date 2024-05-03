@@ -17,7 +17,8 @@ import pickle
 from dataset import CustomDataset
 from metric import compute_metrics
 from model import FPN
-from model2 import FPN101
+# from model2 import FPN101
+from model3 import RetinaFPN101
 
 from warnings import filterwarnings
 filterwarnings("ignore")
@@ -75,7 +76,9 @@ else:
 
 print("device : ", device)
 # model = FPN(device=device)
-model = FPN101(device=device)
+# model = FPN101()
+model = RetinaFPN101(device=device)
+model_name = model._get_name()
 
 backbone = torch.load('model.pth.tar', map_location='cpu')
 state_dict = backbone['state_dict']
@@ -101,6 +104,7 @@ num_epochs = 30
 # result_csv 파일
 init_time = datetime.now()
 init_time = init_time.strftime('%m%d_%H%M')
+init_dir = init_time + "_" + model_name
 columns = [	"time",
 			"epoch",
 			"best_epoch",
@@ -125,27 +129,29 @@ def make_txt_file(file_name, epoch=0, train_loss=0, test_loss=0, outputs=None, l
     #learning curve
     if log_files==0:
         return
+    
+    # loss 기록
     if outputs == None:
         with open(file_name, 'a') as f:
             f.write(f"Epoch:{epoch}  \t{train_loss}\t{test_loss}\n")
         f.close()
+    # outputs file & labels
     else:
-        # output file
         with open(file_name, 'a') as f:
             f.write(f"outputs: {outputs}\n")
             f.write("----"*20)
             f.write("\n")
         f.close()
 
-if args.log_files and not os.path.exists(os.path.join(save_result_path, init_time)):
-    os.makedirs(os.path.join(save_result_path, init_time))
+if args.log_files and not os.path.exists(os.path.join(save_result_path, init_dir)):
+    os.makedirs(os.path.join(save_result_path, init_dir))
 
-    learning_curve_file = os.path.join(save_result_path, init_time, "learning_curve.txt")
-    train_outputs_file  = os.path.join(save_result_path, init_time, "train_outputs.txt")
-    test_outputs_file   = os.path.join(save_result_path, init_time, "test_outputs.txt")
-    train_labels_file   = os.path.join(save_result_path, init_time, "train_labels.txt")
-    test_labels_file    = os.path.join(save_result_path, init_time, "test_labels.txt")
-    csv_name            = os.path.join(save_result_path, init_time, "output.csv")
+    learning_curve_file = os.path.join(save_result_path, init_dir, "learning_curve.txt")
+    train_outputs_file  = os.path.join(save_result_path, init_dir, "train_outputs.txt")
+    test_outputs_file   = os.path.join(save_result_path, init_dir, "test_outputs.txt")
+    train_labels_file   = os.path.join(save_result_path, init_dir, "train_labels.txt")
+    test_labels_file    = os.path.join(save_result_path, init_dir, "test_labels.txt")
+    csv_name            = os.path.join(save_result_path, init_dir, "output.csv")
 
     init_df = pd.DataFrame(columns=columns)
     init_df.to_csv(csv_name, index=False)
@@ -173,7 +179,8 @@ else:
     learning_curve_file = None
     train_outputs_file  = None
     test_outputs_file   = None
-    labels_file         = None
+    train_labels_file   = None
+    test_labels_file    = None
     csv_name            = None
 
 
