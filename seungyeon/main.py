@@ -17,8 +17,8 @@ import pickle
 from dataset import CustomDataset
 from metric import compute_metrics
 from model import FPN
-# from model2 import FPN101
-from model3 import RetinaFPN101
+from model2 import FPN101
+# from model3 import RetinaFPN101
 
 from warnings import filterwarnings
 filterwarnings("ignore")
@@ -76,8 +76,8 @@ else:
 
 print("device : ", device)
 # model = FPN(device=device)
-# model = FPN101()
-model = RetinaFPN101(device=device)
+model = FPN101()
+# model = RetinaFPN101(device=device)
 model_name = model._get_name()
 
 backbone = torch.load('model.pth.tar', map_location='cpu')
