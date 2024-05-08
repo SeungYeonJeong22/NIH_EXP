@@ -166,6 +166,7 @@ data/
 *.csv
 *.json
 *.npy
+*.DS_Store
 
 *pth
 *.pickle
