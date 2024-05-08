@@ -156,7 +156,7 @@ class MLPBlock(nn.Module):
     def __init__(self, in_features, out_features=2048, device='cpu'):
         super(MLPBlock, self).__init__()
         self.batch_norm = nn.BatchNorm2d(in_features)
-        self.gap = nn.AdaptiveMaxPool2d(1)  # Global Max Pooling
+        self.gap = nn.AdaptiveMaxPool2d(in_features)  # Global Max Pooling
         self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(in_features, out_features)
         
