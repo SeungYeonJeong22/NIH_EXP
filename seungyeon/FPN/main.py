@@ -77,7 +77,8 @@ else:
 print("device : ", device)
 # model = FPN(device=device)
 model = FPN101()
-# model = RetinaFPN101(device=device)
+# model = RetinaFPN101()
+model = model.to(device)
 model_name = model._get_name()
 
 backbone = torch.load('model.pth.tar', map_location='cpu')

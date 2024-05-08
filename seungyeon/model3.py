@@ -38,7 +38,7 @@ class Bottleneck(nn.Module):
 
 
 class RetinaFPN(nn.Module):
-    def __init__(self, block, num_blocks, device='cpu'):
+    def __init__(self, block, num_blocks):
         super(RetinaFPN, self).__init__()
         self.in_planes = 64
 
@@ -80,8 +80,6 @@ class RetinaFPN(nn.Module):
         ### Tmp
         self.tmp_flt = nn.Flatten()
         self.tmp_fc = nn.Linear(256 * 28 * 28, 1024)
-        
-        
         
 
     def _make_layer(self, block, planes, num_blocks, stride):
@@ -134,7 +132,7 @@ class RetinaFPN(nn.Module):
         p4 = self.smooth1(p4)
         p3 = self.smooth2(p3)
         
-        return p3, p4, p5, p6, p7
+        # return p3, p4, p5, p6, p7
         
         # Custom
         x = self.tmp_flt(p3)
@@ -165,6 +163,6 @@ class MLPBlock(nn.Module):
         return x
     
 
-def RetinaFPN101(device='cpu'):
+def RetinaFPN101():
     # return RetinaFPN(Bottleneck, [2,4,23,3])
-    return RetinaFPN(Bottleneck, [2,2,2,2], device=device)
+    return RetinaFPN(Bottleneck, [2,2,2,2])

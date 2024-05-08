@@ -66,9 +66,11 @@ class FPN(nn.Module):
         self.latlayer3 = nn.Conv2d( 256, 256, kernel_size=1, stride=1, padding=0)
         
         ### Tmp
+        # self.mlp = MLPBlock()
+        
         self.tmp_flt = nn.Flatten()
         self.tmp_fc = nn.Linear(256 * 28 * 28, 1024)   
-        self.output = nn.Linear(1024, 15)         
+        self.output = nn.Linear(1024, 15)
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -120,6 +122,12 @@ class FPN(nn.Module):
         p3 = self.smooth2(p3)
         p2 = self.smooth3(p2) 
         
+        # p2 = self.mlp(p2)
+        # p3 = self.mlp(p3)
+        # p4 = self.mlp(p4)
+        # p5 = self.mlp(p5)
+        
+        
         # Custom
         x = self.tmp_flt(p3)
         x = self.tmp_fc(x)
@@ -132,6 +140,21 @@ class FPN(nn.Module):
         # return p2, p3, p4, p5
         return x
 
+# class MLPBlock(nn.Module):
+#     def __init__(self, in_features=256, out_features=2048):
+#         super(MLPBlock, self).__init__()
+#         self.batch_norm = nn.BatchNorm2d(in_features)
+#         self.global_max_pooling = nn.AdaptiveMaxPool2d(1)  # Global Max Pooling
+#         self.dropout = nn.Dropout(0.5)
+#         self.fc = nn.Linear(in_features, out_features)
+        
+        
+#     def forward(self, x):
+#         x = self.batch_norm(x)
+#         x = self.global_max_pooling(x)
+#         x = self.dropout(x)
+#         x = F.relu(self.fc(x))
+#         return x
 
 def FPN101():
     # return FPN(Bottleneck, [2,4,23,3])
