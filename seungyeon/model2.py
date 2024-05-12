@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.autograd import Variable
+import torchvision.models as models
 
 
 class Bottleneck(nn.Module):
@@ -41,21 +42,26 @@ class Bottleneck(nn.Module):
 class FPN(nn.Module):
     def __init__(self, block, num_blocks):
         super(FPN, self).__init__()
+        self.backbone = models.densenet121(pretrained=True)
         self.in_planes = 64
         num_p_block = 4
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
+        # self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        # self.bn1 = nn.BatchNorm2d(64)
         self.bn2 = nn.BatchNorm1d(2048 * num_p_block)
 
-        # Bottom-up layers
-        self.layer1 = self._make_layer(block,  64, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+        # Bottom-up layers 
+        # self.layer1 = self._make_layer(block,  64, num_blocks[0], stride=1)
+        # self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
+        # self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
+        # self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+        
+        self.bottom_up_layers = list(self.backbone.features)
+        # print("self.bottom_up_layers : ", self.bottom_up_layers)
 
         # Top layer
-        self.toplayer = nn.Conv2d(2048, 256, kernel_size=1, stride=1, padding=0)  # Reduce channels
+        # self.toplayer = nn.Conv2d(2048, 256, kernel_size=1, stride=1, padding=0)  # Reduce channels
+        self.toplayer = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)  # Reduce channels
 
         # Smooth layers
         self.smooth1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
@@ -63,23 +69,35 @@ class FPN(nn.Module):
         self.smooth3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
 
         # Lateral layers
-        self.latlayer1 = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)
-        self.latlayer2 = nn.Conv2d( 512, 256, kernel_size=1, stride=1, padding=0)
-        self.latlayer3 = nn.Conv2d( 256, 256, kernel_size=1, stride=1, padding=0)
+        # self.latlayer1 = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)
+        # self.latlayer2 = nn.Conv2d( 512, 256, kernel_size=1, stride=1, padding=0)
+        # self.latlayer3 = nn.Conv2d( 256, 256, kernel_size=1, stride=1, padding=0)
+        self.latlayer1 = nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0)
+        self.latlayer2 = nn.Conv2d( 256, 256, kernel_size=1, stride=1, padding=0)
+        self.latlayer3 = nn.Conv2d( 128, 256, kernel_size=1, stride=1, padding=0)
         
         ### Custom
         self.mlp_block = MLPBlock(256, 2048)
-        self.final_fc = nn.Sequential(
-                                        nn.Linear(2048 * num_p_block, 2048),
-                                        nn.ReLU(inplace=True),
-                                        nn.Linear(2048, 1024),
-                                        nn.ReLU(inplace=True),
-                                        nn.Linear(1024, 15),
-                                    )        
+        self.final_fc = nn.Sequential(nn.Linear(2048 * num_p_block, 2048),
+                                    nn.ReLU(inplace=True),
+                                    nn.Linear(2048, 1024),
+                                    nn.ReLU(inplace=True),
+                                    nn.Linear(1024, 15))
         
-        # self.tmp_flt = nn.Flatten()
-        # self.tmp_fc = nn.Linear(256 * 28 * 28, 1024)   
-        # self.output = nn.Linear(1024, 15)
+        
+    def bottom_up_forward(self, x):
+        bottom_up_features = []
+        # backbone feature를 전부 다 돌면서
+        for idx, layer in enumerate(self.bottom_up_layers):
+            x = layer(x)
+            # Transition_layer을 지났으면 bottom_up_features에 레이어 통과한 것을 추가
+            if str(layer).__contains__("Transition"):
+                bottom_up_features.append(x)
+                
+            if idx == len(self.bottom_up_layers)-1:
+                # print("layer : ", layer)
+                bottom_up_features.append(x)
+        return bottom_up_features
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -115,21 +133,30 @@ class FPN(nn.Module):
 
     def forward(self, x):
         # Bottom-up
-        c1 = F.relu(self.bn1(self.conv1(x)))
-        c1 = F.max_pool2d(c1, kernel_size=3, stride=2, padding=1)
-        c2 = self.layer1(c1)
-        c3 = self.layer2(c2)
-        c4 = self.layer3(c3)
-        c5 = self.layer4(c4)
+        # c1 = F.relu(self.bn1(self.conv1(x)))
+        # c1 = F.max_pool2d(c1, kernel_size=3, stride=2, padding=1)
+        # c2 = self.layer1(c1)
+        # c3 = self.layer2(c2)
+        # c4 = self.layer3(c3)
+        # c5 = self.layer4(c4)
+        
+        bottom_up_features = self.bottom_up_forward(x)
+
+        c5 = bottom_up_features[3]
+        c4 = bottom_up_features[2]
+        c3 = bottom_up_features[1]
+        c2 = bottom_up_features[0]
+        
         # Top-down
         p5 = self.toplayer(c5)
         p4 = self._upsample_add(p5, self.latlayer1(c4))
         p3 = self._upsample_add(p4, self.latlayer2(c3))
         p2 = self._upsample_add(p3, self.latlayer3(c2))
+        
         # Smooth
         p4 = self.smooth1(p4)
         p3 = self.smooth2(p3)
-        p2 = self.smooth3(p2) 
+        p2 = self.smooth3(p2)
         
         # Custom
         mlp5 = self.mlp_block(p5)
