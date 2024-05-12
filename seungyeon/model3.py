@@ -44,6 +44,7 @@ class RetinaFPN(nn.Module):
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
+        self.bn2 = nn.BatchNorm1d(2048 * 3)
 
         # Bottom-up layers
         self.layer2 = self._make_layer(block,  64, num_blocks[0], stride=1)
@@ -65,21 +66,38 @@ class RetinaFPN(nn.Module):
         self.latlayer2 = nn.Conv2d( 512, 256, kernel_size=1, stride=1, padding=0)
         
         
-        # Custom 
-        self.fc1 = nn.Linear(28, 2048)
-        self.fc2 = nn.Linear(2048, 1024)
-        self.final_bn = nn.BatchNorm1d(1024)
-        self.output = nn.Linear(1024, 15)
         
-        # #Todo -> 2048 x 최대한 짧게만
+        # # Custom 
+        # self.fc1 = nn.Linear(28, 2048)
+        # self.fc2 = nn.Linear(2048, 1024)
+        # self.final_bn = nn.BatchNorm1d(1024)
+        # self.output = nn.Linear(1024, 15)
+        
+        # #Custom2
+        # p5_w, p4_w, p3_w, p2_w
+        self.p5_mlp = MLPBlock(256, 2048)
+        self.p4_mlp = MLPBlock(256, 2048)
+        self.p3_mlp = MLPBlock(256, 2048)
+        self.p2_mlp = MLPBlock(256, 2048)
+        
+        self.final_fc = nn.Sequential(
+                                        nn.Linear(2048 * 3, 2048),
+                                        nn.ReLU(inplace=True),
+                                        nn.Linear(2048, 1024),
+                                        nn.ReLU(inplace=True),
+                                        nn.Linear(1024, 15),
+                                        nn.ReLU(inplace=True)
+                                    )
+        
+            
         # self.fc1 = nn.Linear(256, 2048)
         # self.fc2 = nn.Linear(2048, 1024)
         # self.final_bn = nn.BatchNorm1d(1024)
         # self.output = nn.Linear(1024, 15)
         
         ### Tmp
-        self.tmp_flt = nn.Flatten()
-        self.tmp_fc = nn.Linear(256 * 28 * 28, 1024)
+        # self.tmp_flt = nn.Flatten()
+        # self.tmp_fc = nn.Linear(256 * 28 * 28, 1024)
         
 
     def _make_layer(self, block, planes, num_blocks, stride):
@@ -134,22 +152,32 @@ class RetinaFPN(nn.Module):
         
         # return p3, p4, p5, p6, p7
         
-        # Custom
-        x = self.tmp_flt(p3)
-        x = self.tmp_fc(x)
+        # # Custom
+        # x = self.tmp_flt(p3)
+        # x = self.tmp_fc(x)
+        # x = torch.sigmoid(self.output(x))
+        mlp5 = self.p5_mlp(p5)
+        mlp4 = self.p4_mlp(p4)
+        mlp3 = self.p3_mlp(p3)
         
-        # x = F.relu(self.fc1(p3))
-        # x = F.relu(self.fc2(x))
-        # x = self.final_bn(self.conv1(x))
-        x = torch.sigmoid(self.output(x))
+        # print("mlp5 : ", mlp5.shape)
+        # print("mlp4 : ", mlp4.shape)
+        # print("mlp3 : ", mlp3.shape)
+        
+        mlp_concat = torch.concat([mlp5, mlp4, mlp3], dim=1)
+        # print("mlp_concat.shape :", mlp_concat.shape)
+        x = self.bn2(mlp_concat)
+        x = self.final_fc(x)
+        
+        x = torch.sigmoid(x)
         
         return x
         
 class MLPBlock(nn.Module):
-    def __init__(self, in_features, out_features=2048, device='cpu'):
+    def __init__(self, in_features=256, out_features=2048):
         super(MLPBlock, self).__init__()
         self.batch_norm = nn.BatchNorm2d(in_features)
-        self.global_max_pooling = nn.AdaptiveMaxPool2d(in_features)  # Global Max Pooling
+        self.global_max_pooling = nn.AdaptiveMaxPool2d(1)  # Global Max Pooling
         self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(in_features, out_features)
         
