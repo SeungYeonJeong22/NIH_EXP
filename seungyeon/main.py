@@ -255,6 +255,7 @@ def main(model):
             df = pd.DataFrame([csv_data], columns=columns)
             df.to_csv(csv_name, mode='a', header=False, index=False)
         
+        
 if __name__ == "__main__":
     from model import FPN
     from model2 import FPN101
