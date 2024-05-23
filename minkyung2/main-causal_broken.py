@@ -872,5 +872,5 @@ import torch.multiprocessing as mp
 if __name__ == '__main__':
     world_size=args.number_of_gpus
 
-    mp.spawn(main, args=(world_size), nprocs=world_size)
+    mp.spawn(main, args=(world_size,), nprocs=world_size)
     # main()

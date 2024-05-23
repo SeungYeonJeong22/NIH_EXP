@@ -1,0 +1,15 @@
+python main-causal.py 4 "0,1,2,3" \
+--dataset_dir "/userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize" \
+--backbone resnet101 \
+--batch-size 64 \
+--print-freq 100 \
+--output "/userHome/userhome3/minkyung/NIH_EXP/minkyung2/output" \
+--epochs 40 \
+--lr 1e-4 \
+--optim AdamW \
+--num_class 15 \
+--img_size 224 \
+--weight-decay 1e-2 \
+--cutout \
+--n_holes 1 \
+--cut_fact 0.5

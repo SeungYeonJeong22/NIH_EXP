@@ -4,7 +4,8 @@ from typing import Optional, List
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
-from torch.nn import MultiheadAttention, MultiheadAttentionDisentangled
+from torch.nn import MultiheadAttention
+from utils.disentangled import MultiheadAttentionDisentangled
 
 
 class Transformer(nn.Module):
