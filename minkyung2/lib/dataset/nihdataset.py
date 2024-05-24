@@ -170,7 +170,9 @@ class NIHDataset(data.Dataset):
         # onehotencoding = [int(elem in labels) for elem in cate] #eg, [1,0,0,0,...,0,1]    
         # label = np.array(onehotencoding).astype(np.float64)
         ## TODO
-        onehotencoding = [int(self.df.loc[index, elem]) for elem in cate] 
+        labels = self.df.loc[index, 'Finding Labels']
+        labels = labels.split("|") #eg, "[Cardiomegaly,"Effusion"]
+        onehotencoding = [int(elem in labels) for elem in cate] 
         label = np.array(onehotencoding).astype(np.float64)
 
         img = Image.open(imgname).convert("RGB") #PIL
