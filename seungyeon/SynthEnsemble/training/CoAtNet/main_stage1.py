@@ -20,7 +20,7 @@ labels_train_val.columns = ['Image_Index']
 labels_test = pd.read_csv('../../../../..//data/test_list.txt')
 labels_test.columns = ['Image_Index']
 disease_labels = ['Atelectasis', 'Consolidation', 'Infiltration', 'Pneumothorax', 'Edema', 'Emphysema', 'Fibrosis', 'Effusion', 'Pneumonia', 'Pleural_Thickening',
-'Cardiomegaly', 'Nodule', 'Mass', 'Hernia']
+'Cardiomegaly', 'Nodule', 'Mass', 'Hernia', 'No Finding']
 # NIH Dataset Labels CSV File 
 labels_df = pd.read_csv('../../../../..//data/Data_Entry_2017.csv')
 labels_df.columns = ['Image_Index', 'Finding_Labels', 'Follow_Up_#', 'Patient_ID',
@@ -31,10 +31,6 @@ labels_df.columns = ['Image_Index', 'Finding_Labels', 'Follow_Up_#', 'Patient_ID
 # One hot encoding
 for diseases in tqdm(disease_labels): 
     labels_df[diseases] = labels_df['Finding_Labels'].map(lambda result: 1 if diseases in result else 0)
-
-# labels_df.to_csv('/kaggle/working/newData.csv')
-labels_df=labels_df[labels_df.Finding_Labels != 'No Finding']
-# #labels_df.head(3)
 
 labels_df['Finding_Labels'] = labels_df['Finding_Labels'].apply(lambda s: [l for l in str(s).split('|')])
 

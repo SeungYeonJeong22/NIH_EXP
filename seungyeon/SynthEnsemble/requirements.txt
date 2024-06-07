@@ -94,9 +94,9 @@ sympy==1.12
 thinc==8.2.3
 threadpoolctl==3.5.0
 timm==1.0.3
-torch==1.13.1+cu116
-torchaudio==0.13.1+cu116
-torchvision==0.14.1+cu116
+# torch==1.13.1+cu116
+# torchaudio==0.13.1+cu116
+# torchvision==0.14.1+cu116
 tornado==6.1
 tqdm==4.66.4
 traitlets==5.14.3
