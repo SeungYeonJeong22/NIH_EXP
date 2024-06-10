@@ -1,11 +1,14 @@
 import argparse
 import math
 import os, sys
+
 #Matplotlib created a temporary config/cache directory at /tmp/matplotlib-6772vh08 because the default path (/.config/matplotlib) is not a writable directory; it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import _init_paths #messo qui in alto al posto che sotto SummaryWriter 
 
+import csv
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 import random
 import datetime
@@ -226,7 +229,7 @@ if args.seed is not None:
     np.random.seed(args.seed)
 
 def main(rank, world_size):
-
+  
     print(f"MAIN - rank: {rank}, worldsize: {world_size}, list_of_GPU_ids: {list_of_GPU_ids}")
 
     ## TODO 12 ottobre nuovo, con distributed training
@@ -376,7 +379,28 @@ def main_worker(rank, world_size, args, logger):
     train_dataset, val_dataset = get_datasets(args)
 
 
+    # output_csv_dir = 'output_nih'
+    # csv_path = os.path.join(output_csv_dir, f"output_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+    
+    # # Initialize the CSV file and write the header
+    # if rank == 0:  # Assuming rank 0 is the primary process
+    #     with open(csv_path, 'w', newline='') as file:
+    #         writer = csv.writer(file)
+    #         writer.writerow(['Time', 'Epoch', 'Best Epoch', 'Train Loss', 'Test Loss', 'Accuracy', 'Precision', 'Recall', 'F1 Score'])
 
+    # ...
+    # for epoch in range(args.start_epoch, args.epochs):
+    #     ...
+    #     # Update training and perform validation
+    #     train_loss = ...
+    #     val_loss, accuracy, precision, recall, f1_score = validate(...)
+
+    #     # Log metrics to CSV, only by the primary process
+    #     if rank == 0:
+    #         with open(csv_path, 'a', newline='') as file:
+    #             writer = csv.writer(file)
+    #             current_time = time.strftime('%Y-%m-%d %H:%M:%S')
+    #             writer.writerow([current_time, epoch, train_loss, val_loss, accuracy, precision, recall, f1_score])
 
 
 
@@ -518,7 +542,10 @@ def main_worker(rank, world_size, args, logger):
 
         loss = train(train_loader, model, ema_m, criterion, optimizer, scheduler, epoch, args, logger)
 
-        ##
+        #######민경 수정 val loss#######
+        val_loss, accuracy, precision, recall, f1_score = validate(val_loader, model, criterion, args, logger, epoch)
+        ###############################
+        
         #TODO moved the scheduler.step procedure from within the train function to outside it
         if epoch in [0, round(0.25*args.epochs), round(0.50*args.epochs), round(0.75*args.epochs)]:
             before_lr = optimizer.param_groups[0]["lr"]
@@ -738,7 +765,6 @@ def train(train_loader, model, ema_m, criterion, optimizer, scheduler, epoch, ar
 
     # for i, (images, target) in enumerate(train_loader):
     for i, (images, target) in enumerate(tqdm(train_loader)):
-
         ### TODO Memory leakage debugging
         # print(f"MEM: {torch.cuda.memory_allocated()/(1024*1024)}, MAX: {torch.cuda.max_memory_allocated()/(1024*1024)}")
         # measure data loading time
@@ -890,6 +916,9 @@ def validate(val_loader, model, criterion, args, logger, epoch):
     saveflag = False
     model.eval()
 
+    # all_targets = []
+    # all_outputs = []
+
     # saved_data = []
     saved_data_x = []
     saved_data_c_cap = []
@@ -1021,9 +1050,26 @@ def validate(val_loader, model, criterion, args, logger, epoch):
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
+            
+            # ###########민경수정csv###########
+            # outputs = model(images)  # Make sure to adjust this line to your model’s output specifics
+            # outputs = torch.sigmoid(outputs)  # Convert logits to probabilities if needed
+            # predicted = outputs > 0.5  # Convert probabilities to binary predictions
+            
+            # all_targets.extend(target.tolist())
+            # all_outputs.extend(predicted.tolist())
+            # ###############################
 
             if i % args.print_freq == 0 and dist.get_rank() == 0:
                 progress.display(i, logger)
+
+        # ###########민경수정csv###########
+        # all_targets = np.array(all_targets)
+        # all_outputs = np.array(all_outputs)
+
+        # accuracy = accuracy_score(all_targets, all_outputs)
+        # precision, recall, f1_score, _ = precision_recall_fscore_support(all_targets, all_outputs, average='binary')
+        # ###############################
 
         logger.info('=> synchronize...')
         if dist.get_world_size() > 1:
@@ -1154,10 +1200,10 @@ def validate(val_loader, model, criterion, args, logger, epoch):
     #     dir = args.output + "/plt/"
     #     if not os.path.exists(dir): os.makedirs(dir)
     #     plt.savefig(os.path.join(dir, "%s.png" % figure_file))
-    
+
     # return loss_avg, mAP, meanAUC
     ##Versione mia TODO:
-    return loss_avg, mAP_x, meanAUC_x, mAP_c_cap, meanAUC_c_cap, mAP_c, meanAUC_c
+    return loss_avg, mAP_x, meanAUC_x, mAP_c_cap, meanAUC_c_cap, mAP_c, meanAUC_c, accuracy, precision, recall, f1_score
     # ##TODO:
     # return loss_avg
 
@@ -1387,5 +1433,6 @@ def clean_state_dict(state_dict):
 
 
 if __name__ == '__main__':
+
     world_size=args.number_of_gpus
     mp.spawn(main, args=(world_size,), nprocs=world_size)

@@ -14,14 +14,6 @@ class PositionAttentionModule(nn.Module):
     def forward(self,x):
         bs,c,h,w=x.shape
         y=self.cnn(x)
-        print("y : ", y.shape)
-
-        print("self.acmix(y) : ", self.acmix(y).shape)
-        print("self.acmix(y).flatten(2) : ",self.acmix(y).flatten(2).shape)
-        print("self.acmix(y).flatten(2).permute(0,2,1) : ",self.acmix(y).flatten(2).permute(0,2,1).shape)
-
-
-
         y = self.acmix(y).flatten(2).permute(0,2,1)
         return y
 

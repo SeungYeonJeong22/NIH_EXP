@@ -1,7 +1,7 @@
-python main-causal.py 4 "0,1,2,3" \
+python main-causal.py 2 "1,2" \
 --dataset_dir "/userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize" \
 --backbone resnet101 \
---batch-size 64 \
+--batch-size 4 \
 --print-freq 100 \
 --output "/userHome/userhome3/minkyung/NIH_EXP/minkyung2/output" \
 --epochs 40 \
@@ -12,4 +12,4 @@ python main-causal.py 4 "0,1,2,3" \
 --weight-decay 1e-2 \
 --cutout \
 --n_holes 1 \
---cut_fact 0.5
+--cut_fact 0.5 
