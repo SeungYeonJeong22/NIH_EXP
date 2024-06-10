@@ -13,6 +13,15 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pickle
 
+import xgboost as xgb
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from tqdm.notebook import tqdm
+import numpy as np
+
+from warnings import filterwarnings
+filterwarnings('ignore')
+
 
 # 재현성을 위해 시드 설정
 SEED = 85
@@ -119,31 +128,17 @@ y_train = train_val_df[disease_labels].values
 X_test = np.stack(test_data['features'])
 y_test = test_df[disease_labels].values
 
-import xgboost as xgb
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-from sklearn.datasets import make_multilabel_classification
-from tqdm.notebook import tqdm
-import numpy as np
-
 num_classes = 15
 
 # XGBoost 모델 설정
 xgb_model = xgb.XGBClassifier(
-    # objective='binary:logistic',
-    # eval_metric='logloss',
-    # use_label_encoder=False
     objective='multi:softprob',
     eval_metric='mlogloss',
     num_class=num_classes,
-    use_label_encoder=False
+    use_label_encoder=False,
+    tree_method='gpu_hist',  # GPU를 사용하도록 설정
+    gpu_id=3  # 특정 GPU를 지정
 )
-
-epochs = 20
-# OneVsRestClassifier로 멀티레이블 분류기 설정
-multilabel_model = OneVsRestClassifier(xgb_model)
 
 # tqdm 콜백 클래스 정의
 class TqdmCallback(xgb.callback.TrainingCallback):
@@ -161,9 +156,25 @@ class TqdmCallback(xgb.callback.TrainingCallback):
 epochs = 20
 multilabel_model = OneVsRestClassifier(xgb_model)
 
+columns = [	"Time",
+			"Accuracy",
+			"F1_macro",
+			"Roc_Auc_macro"]
+
+result_save_path = 'save'
+
+init_time = datetime.now()
+init_time = init_time.strftime('%m%d_%H%M')
+
+init_df = pd.DataFrame(columns=columns)
+csv_name = f'{result_save_path}/{init_time}_xgb_output.csv'
+init_df.to_csv(csv_name, index=False)
+
 # 모델 학습을 위한 맞춤 fit 함수 정의
 def custom_fit(model, X_train, y_train, epochs):
     print("Model Fit Start")
+    evals_result = {}
+
     for i in range(y_train.shape[1]):
         print(f"Training for label {i}")
         model.estimator.fit(
@@ -172,14 +183,16 @@ def custom_fit(model, X_train, y_train, epochs):
             eval_set=[(X_train, y_train[:, i]), (X_test, y_test[:, i])],
             verbose=False, 
             callbacks=[TqdmCallback(epochs, desc=f'Training label {i}')]
+            # evals_result=evals_result
         )
+        # print(f"Loss for label {i}: {evals_result}")
 
 # 모델 학습
 custom_fit(multilabel_model, X_train, y_train, epochs)
 
 # 예측
-y_pred = multilabel_model.predict(X_test)
-y_pred_proba = multilabel_model.predict_proba(X_test)  # AUC-ROC 계산을 위해 필요
+y_pred = multilabel_model.estimator.predict(X_test)
+y_pred_proba = multilabel_model.estimator.predict_proba(X_test)  # AUC-ROC 계산을 위해 필요
 
 # 정확도 및 F1 스코어 계산
 accuracy = accuracy_score(y_test, y_pred)
@@ -198,6 +211,23 @@ print(f"Test ROC AUC Score (Macro): {roc_auc_macro}")
 
 # 각 레이블별 평가 결과 출력
 for idx in range(y_test.shape[1]):
+    accuracy_label = accuracy_score(y_test[:, idx], y_pred[:, idx])
     f1_label = f1_score(y_test[:, idx], y_pred[:, idx])
     roc_auc_label = roc_auc_score(y_test[:, idx], y_pred_proba[:, idx])
-    print(f"Class {idx} - F1 Score: {f1_label}, ROC AUC Score: {roc_auc_label}")
+    print(f"Class {idx} - Accuracy: {accuracy_label}, F1 Score: {f1_label}, ROC AUC Score: {roc_auc_label}")
+
+#######################
+now = datetime.now() 
+csv_record_time = now.strftime('%Y%m%d_%H%M%S')
+csv_accuracy = f"{accuracy:.4f}"
+csv_f1_macro = f"{f1_macro:.4f}"
+csv_roc_auc_macro = f"{roc_auc_macro:.4f}"
+
+csv_data = [csv_record_time,
+            csv_accuracy,
+            csv_f1_macro,
+            csv_roc_auc_macro]
+
+df = pd.DataFrame([csv_data], columns=columns)
+df.to_csv(csv_name, mode='a', header=False, index=False)
+##########################
