@@ -19,6 +19,7 @@ labels_train_val = pd.read_csv('../../../../..//data/train_val_list.txt')
 labels_train_val.columns = ['Image_Index']
 labels_test = pd.read_csv('../../../../..//data/test_list.txt')
 labels_test.columns = ['Image_Index']
+
 disease_labels = ['Atelectasis', 'Consolidation', 'Infiltration', 'Pneumothorax', 'Edema', 'Emphysema', 'Fibrosis', 'Effusion', 'Pneumonia', 'Pleural_Thickening',
 'Cardiomegaly', 'Nodule', 'Mass', 'Hernia', 'No Finding']
 # NIH Dataset Labels CSV File 
@@ -40,17 +41,10 @@ img_path = {os.path.basename(x): x for x in num_glob}
 labels_df['Paths'] = labels_df['Image_Index'].map(img_path.get)
 unique_patients = np.unique(labels_df['Patient_ID'])
 
-from sklearn.model_selection import train_test_split
+train_val_df = labels_df[labels_df['Image_Index'].isin(labels_train_val['Image_Index'])]
+test_df = labels_df[labels_df['Image_Index'].isin(labels_test['Image_Index'])]
 
-# train-70
-# val-10
-# test-20
-train_val_df_patients, test_df_patients = train_test_split(unique_patients, 
-                                   test_size = 0.2,
-                                   random_state = SEED,
-                                    shuffle= True
-                                   )
-train_val_df = labels_df[labels_df['Patient_ID'].isin(train_val_df_patients)]
+
 print('train_val size', train_val_df.shape[0])
 print('test size', labels_df.shape[0] - train_val_df.shape[0])
 
@@ -81,7 +75,6 @@ dblock = DataBlock(
                    batch_tfms=batch_transforms
                   )
 dls = dblock.dataloaders(train_val_df, bs=32)
-# print(dblock.datasets(train_val_merge).train)
 
 from fastai.vision.all import *
 
