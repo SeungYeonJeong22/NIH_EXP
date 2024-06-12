@@ -2,6 +2,11 @@ import fastai
 from fastai.vision.all import *
 from tqdm import tqdm
 from glob import glob
+import os
+import numpy as np
+import pandas as pd
+
+from utils.init_csv import CSV_Record
 
 SEED = 85
 def seed_everything(seed):
@@ -44,9 +49,8 @@ unique_patients = np.unique(labels_df['Patient_ID'])
 train_val_df = labels_df[labels_df['Image_Index'].isin(labels_train_val['Image_Index'])]
 test_df = labels_df[labels_df['Image_Index'].isin(labels_test['Image_Index'])]
 
-
 print('train_val size', train_val_df.shape[0])
-print('test size', labels_df.shape[0] - train_val_df.shape[0])
+print('test size', test_df.shape[0])
 
 item_transforms = [
     Resize((224, 224)),
@@ -58,7 +62,6 @@ batch_transforms = [
     Normalize.from_stats(*imagenet_stats),
 ]
 
-
 def get_x(row):
     return row['Paths']
 
@@ -66,32 +69,50 @@ def get_y(row):
     labels = row[disease_labels].tolist()
     return labels
 
-dblock = DataBlock(
-    blocks=(ImageBlock, MultiCategoryBlock(encoded=True,vocab=disease_labels)),
-                   splitter=RandomSplitter(valid_pct=0.125, seed=SEED),
-                   get_x=get_x,
-                   get_y=get_y,
-                   item_tfms=item_transforms,
-                   batch_tfms=batch_transforms
-                  )
-dls = dblock.dataloaders(train_val_df, bs=32)
 
-from fastai.vision.all import *
+csv_record = CSV_Record(model_name="syn")
+
+
+dblock = DataBlock(
+    blocks=(ImageBlock, MultiCategoryBlock(encoded=True, vocab=disease_labels)),
+    get_x=get_x,
+    get_y=get_y,
+    item_tfms=item_transforms,
+    batch_tfms=batch_transforms
+)
+
+dls = dblock.dataloaders(train_val_df, bs=32)
 
 arch = 'coatnet_2_rw_224.sw_in12k_ft_in1k'
 
-cbs=[
-    SaveModelCallback(monitor='valid_loss', min_delta=0.001, with_opt=True),
-    EarlyStoppingCallback(monitor='valid_loss', min_delta=0.001, patience=5),
+cbs = [
+    SaveModelCallback(monitor='train_loss', min_delta=0.001, with_opt=True),
+    EarlyStoppingCallback(monitor='train_loss', min_delta=0.001, patience=5),
     ShowGraphCallback()
-    ]
+]
 
-learn = vision_learner(dls, arch, metrics=[accuracy_multi, F1ScoreMulti(), RocAucMulti()],cbs=cbs, wd=0.001)
+learn = vision_learner(dls, arch, metrics=[accuracy_multi, F1ScoreMulti(), RocAucMulti()], cbs=cbs, wd=0.001)
 
 learn.model = torch.nn.DataParallel(learn.model)
 lrs = learn.lr_find(suggest_funcs=(minimum, steep, valley, slide))
-print('intial learning rate=', lrs.valley)
+print('initial learning rate=', lrs.valley)
 print()
 
-learn.fine_tune(freeze_epochs=3,epochs=20, base_lr=lrs.valley)
+learn.fine_tune(freeze_epochs=3, epochs=20, base_lr=lrs.valley)
 learn.save('coatnet-70-10-20-split')
+
+# Test set evaluation
+test_dblock = DataBlock(
+    blocks=(ImageBlock, MultiCategoryBlock(encoded=True, vocab=disease_labels)),
+    get_x=get_x,
+    get_y=get_y,
+    item_tfms=item_transforms,
+    batch_tfms=batch_transforms
+)
+
+test_dls = test_dblock.dataloaders(test_df, bs=32, shuffle=False)
+
+# Evaluate on test set
+test_results = learn.validate(dl=test_dls, metrics=[accuracy_multi, F1ScoreMulti(), RocAucMulti()], cbs=cbs, wd=0.001)
+print('Test set evaluation results:', test_results)
+
