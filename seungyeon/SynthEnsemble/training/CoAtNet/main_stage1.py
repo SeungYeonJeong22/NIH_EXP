@@ -113,6 +113,6 @@ test_dblock = DataBlock(
 test_dls = test_dblock.dataloaders(test_df, bs=32, shuffle=False)
 
 # Evaluate on test set
-test_results = learn.validate(dl=test_dls, metrics=[accuracy_multi, F1ScoreMulti(), RocAucMulti()], cbs=cbs, wd=0.001)
+test_results = learn.validate(dl=test_dls, metrics=[accuracy_multi, F1ScoreMulti(), RocAucMulti()])
 print('Test set evaluation results:', test_results)
 
