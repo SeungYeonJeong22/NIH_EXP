@@ -1,3 +1,56 @@
 [05/20 16:37:45.066]: Command: main-causal.py 3 0,1,2 --dataset_dir /userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize --backbone resnet101 --batch-size 64 --print-freq 100 --output /userHome/userhome3/minkyung/NIH_EXP/minkyung2/output --epochs 40 --lr 1e-4 --optim AdamW --num_class 15 --img_size 224 --weight-decay 1e-2 --cutout --n_holes 1 --cut_fact 0.5
 [05/20 16:46:29.714]: Command: main-causal.py 4 0,1,2,3 --dataset_dir /userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize --backbone resnet101 --batch-size 64 --print-freq 100 --output /userHome/userhome3/minkyung/NIH_EXP/minkyung2/output --epochs 40 --lr 1e-4 --optim AdamW --num_class 15 --img_size 224 --weight-decay 1e-2 --cutout --n_holes 1 --cut_fact 0.5
 [05/20 16:46:35.451]: lr:0.0001
+[06/11 12:49:43.966]: Command: main-causal.py 4 0,1,2,3 --dataset_dir /userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize --backbone resnet101 --batch-size 4 --print-freq 100 --output /userHome/userhome3/minkyung/NIH_EXP/minkyung2/output --epochs 40 --lr 1e-4 --optim AdamW --num_class 15 --img_size 224 --weight-decay 1e-2 --cutout --n_holes 1 --cut_fact 0.5
+[06/11 12:49:59.287]: lr:0.0001
+[06/11 12:50:15.869]: Epoch: [0/40][    0/10816]  LR 1.000e-04  Loss 304.362 (304.362)  Mem 22304
+[06/11 12:51:01.759]: Command: main-causal.py 4 0,1,2,3 --dataset_dir /userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize --backbone resnet101 --batch-size 4 --print-freq 100 --output /userHome/userhome3/minkyung/NIH_EXP/minkyung2/output --epochs 40 --lr 1e-4 --optim AdamW --num_class 15 --img_size 224 --weight-decay 1e-2 --cutout --n_holes 1 --cut_fact 0.5
+[06/11 12:51:07.595]: lr:0.0001
+[06/11 12:51:12.305]: Epoch: [0/40][    0/10816]  LR 1.000e-04  Loss 310.078 (310.078)  Mem 22304
+[06/11 12:52:50.534]: Epoch: [0/40][  100/10816]  LR 1.000e-04  Loss 270.159 (188.756)  Mem 22304
+[06/11 12:54:25.527]: Epoch: [0/40][  200/10816]  LR 1.000e-04  Loss 43.530 (168.114)  Mem 22304
+[06/11 12:55:59.420]: Epoch: [0/40][  300/10816]  LR 1.000e-04  Loss 407.148 (158.138)  Mem 22304
+[06/11 12:57:37.674]: Epoch: [0/40][  400/10816]  LR 1.000e-04  Loss 72.343 (150.077)  Mem 22304
+[06/11 12:59:13.011]: Epoch: [0/40][  500/10816]  LR 1.000e-04  Loss 48.197 (145.758)  Mem 22304
+[06/11 13:00:49.286]: Epoch: [0/40][  600/10816]  LR 1.000e-04  Loss 35.791 (144.264)  Mem 22304
+[06/11 13:02:28.251]: Epoch: [0/40][  700/10816]  LR 1.000e-04  Loss 106.299 (139.453)  Mem 22304
+[06/11 13:04:09.254]: Epoch: [0/40][  800/10816]  LR 1.000e-04  Loss 41.545 (136.166)  Mem 22304
+[06/11 13:05:43.812]: Epoch: [0/40][  900/10816]  LR 1.000e-04  Loss 58.797 (133.395)  Mem 22304
+[06/11 13:07:17.436]: Epoch: [0/40][ 1000/10816]  LR 1.000e-04  Loss 54.016 (133.686)  Mem 22304
+[06/11 13:08:52.334]: Epoch: [0/40][ 1100/10816]  LR 1.000e-04  Loss 42.857 (132.667)  Mem 22304
+[06/11 13:10:32.723]: Epoch: [0/40][ 1200/10816]  LR 1.000e-04  Loss 145.391 (131.322)  Mem 22304
+[06/11 13:12:12.651]: Epoch: [0/40][ 1300/10816]  LR 1.000e-04  Loss 310.037 (130.249)  Mem 22304
+[06/11 13:13:46.744]: Epoch: [0/40][ 1400/10816]  LR 1.000e-04  Loss 163.456 (130.314)  Mem 22304
+[06/11 13:15:20.917]: Epoch: [0/40][ 1500/10816]  LR 1.000e-04  Loss 372.559 (130.104)  Mem 22304
+[06/11 13:16:56.459]: Epoch: [0/40][ 1600/10816]  LR 1.000e-04  Loss 253.852 (130.046)  Mem 22304
+[06/11 13:18:32.127]: Epoch: [0/40][ 1700/10816]  LR 1.000e-04  Loss 128.158 (128.602)  Mem 22304
+[06/11 13:20:06.635]: Epoch: [0/40][ 1800/10816]  LR 1.000e-04  Loss 167.806 (127.371)  Mem 22304
+[06/11 13:21:41.529]: Epoch: [0/40][ 1900/10816]  LR 1.000e-04  Loss 147.402 (127.154)  Mem 22304
+[06/11 13:23:23.897]: Epoch: [0/40][ 2000/10816]  LR 1.000e-04  Loss 432.294 (126.843)  Mem 22304
+[06/11 13:24:57.819]: Epoch: [0/40][ 2100/10816]  LR 1.000e-04  Loss 49.602 (125.573)  Mem 22304
+[06/11 14:24:54.801]: Command: main-causal.py 4 0,1,2,3 --dataset_dir /userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize --backbone resnet101 --batch-size 4 --print-freq 100 --output /userHome/userhome3/minkyung/NIH_EXP/minkyung2/output --epochs 40 --lr 1e-4 --optim AdamW --num_class 15 --img_size 224 --weight-decay 1e-2 --cutout --n_holes 1 --cut_fact 0.5
+[06/11 14:25:12.355]: lr:0.0001
+[06/11 14:25:32.173]: Epoch: [0/40][    0/10816]  LR 1.000e-04  Loss 277.732 (277.732)  Mem 22304
+[06/11 14:28:03.270]: Epoch: [0/40][  100/10816]  LR 1.000e-04  Loss 253.946 (202.476)  Mem 22304
+[06/11 14:29:47.954]: Epoch: [0/40][  200/10816]  LR 1.000e-04  Loss 53.910 (171.727)  Mem 22304
+[06/11 14:31:25.038]: Epoch: [0/40][  300/10816]  LR 1.000e-04  Loss 378.838 (159.635)  Mem 22304
+[06/11 15:09:12.234]: Command: main-causal.py 4 0,1,2,3 --dataset_dir /userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize --backbone resnet101 --batch-size 4 --print-freq 100 --output /userHome/userhome3/minkyung/NIH_EXP/minkyung2/output --epochs 40 --lr 1e-4 --optim AdamW --num_class 15 --img_size 224 --weight-decay 1e-2 --cutout --n_holes 1 --cut_fact 0.5
+[06/11 15:09:17.972]: lr:0.0001
+[06/11 15:09:22.604]: Epoch: [0/40][    0/10816]  LR 1.000e-04  Loss 280.622 (280.622)  Mem 22304
+[06/11 15:10:48.391]: Epoch: [0/40][  100/10816]  LR 1.000e-04  Loss 281.090 (184.812)  Mem 22304
+[06/11 15:12:14.916]: Epoch: [0/40][  200/10816]  LR 1.000e-04  Loss 44.210 (164.291)  Mem 22304
+[06/11 15:13:40.812]: Epoch: [0/40][  300/10816]  LR 1.000e-04  Loss 395.155 (155.426)  Mem 22304
+[06/11 15:15:13.742]: Epoch: [0/40][  400/10816]  LR 1.000e-04  Loss 84.704 (148.164)  Mem 22304
+[06/11 15:16:46.817]: Epoch: [0/40][  500/10816]  LR 1.000e-04  Loss 47.775 (144.200)  Mem 22304
+[06/11 15:18:20.065]: Epoch: [0/40][  600/10816]  LR 1.000e-04  Loss 37.065 (142.626)  Mem 22304
+[06/11 15:19:53.847]: Epoch: [0/40][  700/10816]  LR 1.000e-04  Loss 100.999 (137.937)  Mem 22304
+[06/11 15:21:26.495]: Epoch: [0/40][  800/10816]  LR 1.000e-04  Loss 39.823 (134.837)  Mem 22304
+[06/11 15:23:00.781]: Epoch: [0/40][  900/10816]  LR 1.000e-04  Loss 59.415 (132.138)  Mem 22304
+[06/11 15:24:34.265]: Epoch: [0/40][ 1000/10816]  LR 1.000e-04  Loss 45.558 (132.485)  Mem 22304
+[06/11 15:26:08.008]: Epoch: [0/40][ 1100/10816]  LR 1.000e-04  Loss 37.575 (131.484)  Mem 22304
+[06/11 15:27:40.970]: Epoch: [0/40][ 1200/10816]  LR 1.000e-04  Loss 135.076 (130.242)  Mem 22304
+[06/11 15:29:15.241]: Epoch: [0/40][ 1300/10816]  LR 1.000e-04  Loss 317.322 (129.284)  Mem 22304
+[06/11 15:30:47.861]: Epoch: [0/40][ 1400/10816]  LR 1.000e-04  Loss 161.912 (129.331)  Mem 22304
+[06/11 15:32:20.884]: Epoch: [0/40][ 1500/10816]  LR 1.000e-04  Loss 340.524 (129.210)  Mem 22304
+[06/11 15:33:55.674]: Epoch: [0/40][ 1600/10816]  LR 1.000e-04  Loss 246.066 (129.227)  Mem 22304
+[06/11 15:35:29.100]: Epoch: [0/40][ 1700/10816]  LR 1.000e-04  Loss 134.241 (127.899)  Mem 22304

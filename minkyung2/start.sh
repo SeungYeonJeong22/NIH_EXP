@@ -1,7 +1,7 @@
-python main-causal.py 2 "1,2" \
+python main-causal.py 2 "2,3" \
 --dataset_dir "/userHome/userhome3/minkyung/NIH_EXP/minkyung2/images_resize" \
 --backbone resnet101 \
---batch-size 4 \
+--batch-size 2 \
 --print-freq 100 \
 --output "/userHome/userhome3/minkyung/NIH_EXP/minkyung2/output" \
 --epochs 40 \
