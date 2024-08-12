@@ -257,12 +257,13 @@ def main(model):
         
         
 if __name__ == "__main__":
+    # from orig_model import FPN
     from model import FPN
-    from model2 import FPN101
+    # from model2 import FPN101
     # from model3 import RetinaFPN101
     
-    # model = FPN(device=device)
-    model = FPN101()
+    model = FPN()
+    # model = FPN101()
     
     # model = RetinaFPN101()
     main(model=model)

@@ -1,11 +1,17 @@
 import copy
 from typing import Optional, List
 
+import sys
+sys.path.append("/userHome/userhome4/seungyeon/workdir/NIH_CXR/NIH_EXP/minkyung2/lib/models")
+
+
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
-from torch.nn import MultiheadAttention, MultiheadAttentionDisentangled
+# from torch.nn import MultiheadAttention, MultiheadAttentionDisentangled
+from torch.nn import MultiheadAttention
 
+from disentangled import MultiheadAttentionDisentangled
 
 class Transformer(nn.Module):
 

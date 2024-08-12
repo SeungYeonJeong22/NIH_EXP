@@ -71,8 +71,8 @@ accelerator = Accelerator()
 def parser_args():
     parser = argparse.ArgumentParser(description='Training')
     ## TODO 12 ottobre 2023 nuova con distributed training 
-    parser.add_argument("number_of_gpus",type=int,help="The number of GPUs you intend to use")
-    parser.add_argument("gpus_ids",type=str,help="The comma separated list of integers representing the id of requested GPUs - such as '2,3'")
+    parser.add_argument("--number_of_gpus",type=int,default=1,help="The number of GPUs you intend to use")
+    parser.add_argument("--gpus_ids",type=str,default="2",help="The comma separated list of integers representing the id of requested GPUs - such as '2,3'")
     ##
     parser.add_argument('--note', help='note', default='Causal experiment')
     parser.add_argument('--dataname', help='dataname', default='nih')

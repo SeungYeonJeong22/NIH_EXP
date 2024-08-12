@@ -15,11 +15,6 @@ from glob import glob
 import pandas as pd
 
 
-cate = ["Cardiomegaly", "Nodule", "Fibrosis", "Pneumonia", "Hernia", "Atelectasis", "Pneumothorax", "Infiltration", "Mass",
-        "Pleural_Thickening", "Edema", "Consolidation", "No Finding", "Emphysema", "Effusion"]
-
-category_map = {cate[i]:i+1 for i in range(15)}
-
 class NIHDataset(data.Dataset):
     # In the following, the pickle files represent the serialized version of dictionary objects.
     # Specifically, each of such dict has image index as keys and a list of three elements as values (img name, img file, img labelvector):
@@ -145,12 +140,58 @@ class NIHDataset(data.Dataset):
     def __init__(self, data_path,input_transform=None,
                  used_category=-1,train=True):
         
+        ########## 여기 ############# 데이터 들어있는 path
+        root_data_path = "/userHome/userhome4/seungyeon/workdir/NIH_CXR/data"
+        train_val_list_path = "train_val_list.txt"
+        test_list_path = "test_list.txt"
+        
+        labels_train_val = pd.read_csv(os.path.join(root_data_path, train_val_list_path))
+        labels_train_val.columns = ['Image_Index']
+        labels_test = pd.read_csv(os.path.join(root_data_path, test_list_path))
+        labels_test.columns = ['Image_Index']
+
+        disease_labels = ['Atelectasis', 'Consolidation', 'Infiltration', 'Pneumothorax', 'Edema', 'Emphysema', 'Fibrosis', 'Effusion', 'Pneumonia', 'Pleural_Thickening',
+        'Cardiomegaly', 'Nodule', 'Mass', 'Hernia', 'No Finding']
+        
+        self.disease_labels = disease_labels
+        
+        category_map = {disease_labels[i]:i+1 for i in range(15)}        
+        
+        # NIH Dataset Labels CSV File 
+        labels_df = pd.read_csv(os.path.join(root_data_path, 'Data_Entry_2017.csv')) ########## 여기 #############
+        labels_df.columns = ['Image_Index', 'Finding_Labels', 'Follow_Up_#', 'Patient_ID',
+                        'Patient_Age', 'Patient_Gender', 'View_Position',
+                        'Original_Image_Width', 'Original_Image_Height',
+                        'Original_Image_Pixel_Spacing_X',
+                        'Original_Image_Pixel_Spacing_Y', 'dfd']
+        # One hot encoding
+        for diseases in tqdm(disease_labels): 
+            labels_df[diseases] = labels_df['Finding_Labels'].map(lambda result: 1 if diseases in result else 0)
+
+        labels_df['Finding_Labels'] = labels_df['Finding_Labels'].apply(lambda s: [l for l in str(s).split('|')])
+
+        num_glob = glob(os.path.join(root_data_path, 'images_all/*.png')) ########## 여기 #############
+        img_path = {os.path.basename(x): x for x in num_glob}
+
+        labels_df['Paths'] = labels_df['Image_Index'].map(img_path.get)
+
+        train_val_df = labels_df[labels_df['Image_Index'].isin(labels_train_val['Image_Index'])]
+        test_df = labels_df[labels_df['Image_Index'].isin(labels_test['Image_Index'])]
+        test_df.reset_index(drop=True, inplace=True)
+        
         if train == True:
-            self.df = pd.read_csv('./Data_Entry_my_trainval.csv') #TODO
-            self.images_path = './images/trainval/'
+            # self.df = pd.read_csv('./Data_Entry_my_trainval.csv') #TODO
+            # self.images_path = './images/trainval/'
+            self.df = train_val_df
+            self.images_path = train_val_df['Paths']
         else:
-            self.df = pd.read_csv('./Data_Entry_my_test.csv') #TODO
-            self.images_path = './images/test/' ##the original version used the test set as inner validation.. so we should create an inner validation set from the trainval set instead.
+            # self.df = pd.read_csv('./Data_Entry_my_test.csv') #TODO
+            # self.images_path = './images/test/' ##the original version used the test set as inner validation.. so we should create an inner validation set from the trainval set instead.
+            self.df = test_df
+            self.images_path = test_df['Paths']
+            
+        # self.df.sample(frac=0.1, replace=False, random_state=1)
+        # self.df.reset_index(drop=True, inplace=True)
         
         # self.df = self.df.loc[:,["Image Index","Finding Labels"]]
 
@@ -161,16 +202,17 @@ class NIHDataset(data.Dataset):
 
 
     def __getitem__(self, index):
-        imgname = os.path.join(self.images_path, self.df.iloc[index, 0])        
+        # imgname = os.path.join(self.images_path, self.df.iloc[index, 0])
+        imgname = self.df.loc[index, 'Paths']
         if "BAD" in imgname:
-            raise ValueError   
+            raise ValueError
         
         # labels= self.df.loc[index, 'Finding Labels']
         # labels = labels[0].split("|") #eg, "[Cardiomegaly,"Effusion"]
         # onehotencoding = [int(elem in labels) for elem in cate] #eg, [1,0,0,0,...,0,1]    
         # label = np.array(onehotencoding).astype(np.float64)
         ## TODO
-        onehotencoding = [int(self.df.loc[index, elem]) for elem in cate] 
+        onehotencoding = [int(self.df.loc[index, elem]) for elem in self.disease_labels] 
         label = np.array(onehotencoding).astype(np.float64)
 
         img = Image.open(imgname).convert("RGB") #PIL
