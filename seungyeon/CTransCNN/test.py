@@ -1,9 +1,12 @@
 import argparse
 import os
 import warnings
-
+import sys
 warnings.filterwarnings('ignore')
 from numbers import Number
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 
 import mmcv
 import numpy as np
@@ -18,6 +21,10 @@ from model.models import build_classifier
 from model.utils import (auto_select_device, get_root_logger,
                          setup_multi_processes, wrap_distributed_model,
                          wrap_non_distributed_model)
+
+
+
+from utils import calculate_metric
 
 def parse_args():
     parser = argparse.ArgumentParser(description='mmcls test model')
@@ -39,6 +46,7 @@ def parse_args():
         '--metrics',
         type=str,
         nargs='+',
+        default="multi_auc",
         help='evaluation metrics, which depends on the dataset, e.g., '
              '"accuracy", "precision", "recall", "f1_score", "support" for single '
              'label dataset, and "mAP", "CP", "CR", "CF1", "OP", "OR", "OF1" "multi_auc" for '
@@ -85,6 +93,8 @@ def parse_args():
         '--gpu-id',
         type=int,
         default=0,
+        # type=bool,
+        # default=None,
         help='id of gpu to use '
              '(only applicable to non-distributed testing)')
     parser.add_argument(

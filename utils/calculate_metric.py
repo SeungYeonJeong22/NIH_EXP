@@ -101,6 +101,7 @@ def one_error(predicts, targets):
 
 # Cell 7: Calculate Subset Accuracy
 def Subset_Accuracy(predicts, targets):
+    predicts = (predicts > threshold).to(int)
     subset_accuracy = accuracy_score(targets.cpu(), predicts, normalize=True)
     print(f'Subset Accuracy: {subset_accuracy:.4f}')
     
@@ -109,7 +110,8 @@ def Subset_Accuracy(predicts, targets):
 
 # Cell 8: Calculate Macro F1 Score
 def Macro_F1_Score(predicts, targets):
-    macro_f1_score = f1_score(targets.cpu(), predicts, average='macro')
+    binary_outputs = (predicts > threshold).numpy().astype(int)
+    macro_f1_score = f1_score(targets.cpu(), binary_outputs, average='macro')
     print(f'Macro F1 Score: {macro_f1_score:.4f}')
     
     return f"{macro_f1_score:.4f}"
@@ -117,7 +119,8 @@ def Macro_F1_Score(predicts, targets):
 
 # Cell 9: Calculate Micro F1 Score
 def Micro_F1_Score(predicts, targets):
-    micro_f1_score = f1_score(targets.cpu(), predicts, average='micro')
+    binary_outputs = (predicts > threshold).numpy().astype(int)
+    micro_f1_score = f1_score(targets.cpu(), binary_outputs, average='micro')
     print(f'Micro F1 Score: {micro_f1_score:.4f}')
 
     return f"{micro_f1_score:.4f}"
@@ -131,10 +134,24 @@ def results_low_score_image(df, predicts, targets, metric):
         each_row_score = {i: hamming_loss(targets[i].cpu(), predicts_binary[i]) for i, v in enumerate(targets)}
         
     elif metric.lower() == "Ranking_loss" .lower():
-        each_row_score = {i: label_ranking_loss([targets[i].cpu()], [predicts[i]]) for i, v in enumerate(targets)}
-        
+        try: each_row_score = {i: label_ranking_loss([targets[i].cpu()], [predicts[i]]) for i, v in enumerate(targets)}
+        except: 
+            each_row_score = {}
+            for i, v in enumerate(targets):
+                labels = targets[i].cpu().flatten().tolist()  # .flatten()을 사용해 1차원으로 변환
+                predictions = predicts[i].flatten().tolist()  # .flatten()을 사용해 1차원으로 변환
+                
+                each_row_score[i] = label_ranking_loss([labels], [predictions])
+                        
     elif metric.lower() == "Multilabel_Coverage" .lower():
-        each_row_score = {i: coverage_error([targets[i].cpu()], [predicts[i]]) for i, v in enumerate(targets)}
+        try: each_row_score = {i: coverage_error([targets[i].cpu()], [predicts[i]]) for i, v in enumerate(targets)}
+        except: 
+            each_row_score = {}
+            for i, v in enumerate(targets):
+                labels = targets[i].cpu().flatten().tolist()  # .flatten()을 사용해 1차원으로 변환
+                predictions = predicts[i].flatten().tolist()  # .flatten()을 사용해 1차원으로 변환
+                
+                each_row_score[i] = label_ranking_loss([labels], [predictions])
         
     # # Todo
     # elif metric.lower() == "Multilabel_Accuracy" .lower():
