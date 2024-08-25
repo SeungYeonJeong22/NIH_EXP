@@ -73,6 +73,27 @@ def Multilabel_Accuracy(predicts, targets):
     return f"{multilabel_accuracy:.4f}"
 
 
+from sklearn.metrics import jaccard_score
+import numpy as np
+
+def Multilabel_Accuracy(predicts, targets):
+    predicts = (predicts > threshold).to(int)
+    """
+    다중 레이블 정확도를 계산합니다.
+
+    :param y_true: 실제 레이블 (2D numpy 배열 또는 리스트)
+    :param y_pred: 예측된 레이블 (2D numpy 배열 또는 리스트)
+    :return: 다중 레이블 정확도 (Jaccard Index의 평균)
+    """
+    # average='samples' 옵션은 각 샘플에 대한 Jaccard Index를 계산한 후 평균을 냅니다.
+    
+    multilabel_accuracy_score = jaccard_score(targets, predicts, average='samples')
+    
+    print(f'Multilabel Accuracy: {multilabel_accuracy_score:.4f}')
+    return f'{multilabel_accuracy_score:.4f}'
+
+
+
 # Cell 5: Calculate Multilabel Coverage
 def Multilabel_Coverage(predicts, targets):
     multilabel_coverage = coverage_error(targets.cpu(), predicts)

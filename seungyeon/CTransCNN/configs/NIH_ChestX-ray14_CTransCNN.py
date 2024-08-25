@@ -57,31 +57,38 @@ test_pipeline = [
 # data_root = './open_data/NIH-Chest_x-rays14_multi-label/'
 data_root = './open_data/chest14/'
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=64,
+    # samples_per_gpu=32,
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         data_prefix=data_root,
         # ann_file=data_root + 'add72_chest14_train_labels.txt',
         # classes=data_root + 'add72_chest14_classes.txt',
-        ann_file=data_root + 'train_val_labels.txt',
-        classes=data_root + 'add72_chest14_classes.txt',
+        # ann_file=data_root + 'train_val_labels.txt',
+        # classes=data_root + 'add72_chest14_classes.txt',
+        ann_file=data_root + 'train_val_labels_14.txt',
+        classes=data_root + 'add72_chest14_classes_orig.txt',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         data_prefix=data_root,
         # ann_file=data_root + 'add72_chest14_val_labels.txt',
         # classes=data_root + 'add72_chest14_classes.txt',
-        ann_file=data_root + 'train_val_labels.txt',
-        classes=data_root + 'add72_chest14_classes.txt',
+        # ann_file=data_root + 'train_val_labels.txt',
+        # classes=data_root + 'add72_chest14_classes.txt',
+        ann_file=data_root + 'train_val_labels_14.txt',
+        classes=data_root + 'add72_chest14_classes_orig.txt',        
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         data_prefix=data_root,
         # ann_file=data_root + 'add72_chest14_test_labels.txt',
         # classes=data_root + 'add72_chest14_classes.txt',
-        ann_file=data_root + 'test_labels.txt',
-        classes=data_root + 'add72_chest14_classes.txt',
+        # ann_file=data_root + 'test_labels.txt',
+        # classes=data_root + 'add72_chest14_classes.txt',
+        ann_file=data_root + 'test_labels_14.txt',
+        classes=data_root + 'add72_chest14_classes_orig.txt',        
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric=[
     'mAP', 'CP', 'CR', 'CF1', 'OP', 'OR', 'OF1', 'multi_auc'
@@ -111,7 +118,8 @@ lr_config = dict(
     warmup_iters=5 * 1252,
     warmup_by_epoch=False)
 
-runner = dict(type='EpochBasedRunner', max_epochs=300)
+# runner = dict(type='EpochBasedRunner', max_epochs=300)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 # checkpoint saving
 checkpoint_config = dict(interval=1)
 # yapf:disable
